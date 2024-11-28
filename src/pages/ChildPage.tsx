@@ -132,7 +132,11 @@ const ChildPage: React.FC = () => {
     const updateTodos = (todos: TodoItem[]) => {
       return todos.map(t => {
         if (t.id === todo.id) {
-          return { ...t, isDone: !t.isDone };
+          return { 
+            ...t, 
+            isDone: !t.isDone,
+            completedAt: !t.isDone ? new Date().toISOString() : undefined 
+          };
         }
         return t;
       });
@@ -140,7 +144,6 @@ const ChildPage: React.FC = () => {
 
     if (isShared) {
       setSharedTodos(updateTodos(sharedTodos));
-      // Update shared status in localStorage or backend
     } else {
       setPersonalTodos(updateTodos(personalTodos));
     }
@@ -154,7 +157,14 @@ const ChildPage: React.FC = () => {
     const missed = todos.filter(
       todo => !todo.isDone && !isAfter(new Date(todo.endTime), now)
     );
-    const completed = todos.filter(todo => todo.isDone);
+    // Sort completed items by completion time, most recent first
+    const completed = todos
+      .filter(todo => todo.isDone)
+      .sort((a, b) => {
+        const aTime = new Date(a.completedAt || a.endTime).getTime();
+        const bTime = new Date(b.completedAt || b.endTime).getTime();
+        return bTime - aTime;  // Most recent first
+      });
 
     return [...incomplete, ...missed, ...completed];
   };
@@ -234,11 +244,11 @@ const ChildPage: React.FC = () => {
           left: 16,
           bgcolor: (theme) => theme.palette.background.paper === '#121212'
             ? 'rgba(255, 255, 255, 0.12)'
-            : 'rgba(100, 100, 1000, 0.12)',
+            : 'rgba(100, 100, 100, .85)',
           '&:hover': {
             bgcolor: (theme) => theme.palette.background.paper === '#121212'
               ? 'rgba(255, 255, 255, 0.16)'
-              : 'rgba(0, 0, 0, 0.16)',
+              : 'rgba(100, 100, 100, .5)',
           },
           padding: 2,
         }}

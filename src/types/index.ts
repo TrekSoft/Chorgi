@@ -14,4 +14,5 @@ export interface TodoItem {
   endTime: string;
   isShared: boolean;
   eventId: string;
+  completedAt?: string; // Optional timestamp for when todo was completed
 }
