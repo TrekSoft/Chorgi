@@ -9,20 +9,14 @@ let tokenClient: google.accounts.oauth2.TokenClient;
 
 export const initializeGoogleCalendar = async () => {
   await new Promise<void>((resolve) => {
-    const script = document.createElement('script');
-    script.src = 'https://apis.google.com/js/api.js';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      gapi.load('client', async () => {
-        await gapi.client.init({
-          discoveryDocs: [DISCOVERY_DOC],
-        });
-        gapiInited = true;
-        resolve();
+    gapi.load('client', async () => {
+      await gapi.client.init({
+        apiKey: process.env.REACT_APP_GOOGLE_API_KEY,
+        discoveryDocs: [DISCOVERY_DOC],
       });
-    };
-    document.body.appendChild(script);
+      gapiInited = true;
+      resolve();
+    });
   });
 
   tokenClient = google.accounts.oauth2.initTokenClient({

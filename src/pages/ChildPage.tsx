@@ -25,6 +25,7 @@ const ChildPage: React.FC = () => {
   const [idleTimer, setIdleTimer] = useState<NodeJS.Timeout>();
   const [personalCalendars, setPersonalCalendars] = useState<string[]>([]);
   const [sharedCalendars, setSharedCalendars] = useState<string[]>([]);
+  const [isCalendarInitialized, setIsCalendarInitialized] = useState(false);
 
   // Load child data and saved calendars
   useEffect(() => {
@@ -74,13 +75,17 @@ const ChildPage: React.FC = () => {
 
   // Initialize Google Calendar
   useEffect(() => {
-    initializeGoogleCalendar();
+    const init = async () => {
+      await initializeGoogleCalendar();
+      setIsCalendarInitialized(true);
+    };
+    init();
   }, []);
 
   // Load todos from Google Calendar
   useEffect(() => {
     const fetchTodos = async () => {
-      if (!child?.googleToken) return;
+      if (!child?.googleToken || !isCalendarInitialized) return;
 
       try {
         const now = new Date();
@@ -112,7 +117,7 @@ const ChildPage: React.FC = () => {
     };
 
     fetchTodos();
-  }, [child?.googleToken, personalCalendars, sharedCalendars]);
+  }, [child?.googleToken, personalCalendars, sharedCalendars, isCalendarInitialized]);
 
   const handlePersonalCalendarsChange = (calendars: string[]) => {
     setPersonalCalendars(calendars);
