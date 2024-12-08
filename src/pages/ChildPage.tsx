@@ -9,10 +9,11 @@ import {
   ListItemText,
   Paper,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import { Child, TodoItem } from '../types';
-import { isAfter, startOfDay, endOfDay } from 'date-fns';
+import { isAfter, startOfDay, endOfDay, format } from 'date-fns';
 import { getEventsFromCalendar, initializeGoogleCalendar } from '../services/googleCalendar';
 import CalendarSettings from '../components/CalendarSettings';
 
@@ -22,10 +23,20 @@ const ChildPage: React.FC = () => {
   const [child, setChild] = useState<Child | null>(null);
   const [personalTodos, setPersonalTodos] = useState<TodoItem[]>([]);
   const [sharedTodos, setSharedTodos] = useState<TodoItem[]>([]);
-  const [idleTimer, setIdleTimer] = useState<NodeJS.Timeout>();
   const [personalCalendars, setPersonalCalendars] = useState<string[]>([]);
   const [sharedCalendars, setSharedCalendars] = useState<string[]>([]);
   const [isCalendarInitialized, setIsCalendarInitialized] = useState(false);
+  const [isLoadingTodos, setIsLoadingTodos] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Load child data and saved calendars
   useEffect(() => {
@@ -85,7 +96,7 @@ const ChildPage: React.FC = () => {
   // Load todos from Google Calendar
   useEffect(() => {
     const fetchTodos = async () => {
-      if (!child?.googleToken || !isCalendarInitialized) return;
+      if (!child?.googleToken) return;
 
       try {
         const now = new Date();
@@ -113,10 +124,13 @@ const ChildPage: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching todos:', error);
+      } finally {
+        setIsLoadingTodos(false);
       }
     };
 
-    fetchTodos();
+    setIsLoadingTodos(true);
+    setTimeout(fetchTodos, 1000); // Wait for Google API to initialize before fetchTodos();
   }, [child?.googleToken, personalCalendars, sharedCalendars, isCalendarInitialized]);
 
   const handlePersonalCalendarsChange = (calendars: string[]) => {
@@ -174,66 +188,85 @@ const ChildPage: React.FC = () => {
     return [...incomplete, ...missed, ...completed];
   };
 
-  const renderTodoList = (todos: TodoItem[], isShared: boolean) => (
-    <List>
-      {sortTodos(todos).map((todo) => {
-        return (
-          <ListItem
-            key={todo.id}
-            onClick={() => toggleTodoStatus(todo, isShared)}
-            sx={{
-              bgcolor: (theme) => theme.palette.background.paper === '#121212' 
-                ? 'rgba(255, 255, 255, 0.12)' 
-                : 'rgba(0, 0, 0, 0.12)',
-              my: 1,
-              borderRadius: 1,
-              height: 72,
-              cursor: 'pointer',
-              '&:hover': {
-                bgcolor: (theme) => theme.palette.background.paper === '#121212'
-                  ? 'rgba(255, 255, 255, 0.16)'
-                  : 'rgba(0, 0, 0, 0.16)',
-              },
-            }}
-          >
-            <Box
+  const renderTodoList = (todos: TodoItem[], isShared: boolean) => {
+    if (isLoadingTodos) {
+      return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
+          <CircularProgress size={40} sx={{ mb: 2 }} />
+          <Typography>Loading chores...</Typography>
+        </Box>
+      );
+    }
+
+    if (todos.length === 0) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Typography>No chores here!</Typography>
+        </Box>
+      );
+    }
+
+    return (
+      <List>
+        {sortTodos(todos).map((todo) => {
+          return (
+            <ListItem
+              key={todo.id}
+              onClick={() => toggleTodoStatus(todo, isShared)}
               sx={{
-                width: 24,
-                height: 24,
-                border: 2,
-                borderColor: todo.isDone ? 'primary.main' : 'text.primary',
-                borderRadius: '50%',
-                mr: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {todo.isDone && (
-                <Box
-                  sx={{
-                    width: 12,
-                    height: 12,
-                    bgcolor: 'primary.main',
-                    borderRadius: '50%',
-                  }}
-                />
-              )}
-            </Box>
-            <ListItemText
-              primary={todo.title}
-              sx={{
-                textDecoration: todo.isDone ? 'line-through' : 'none',
-                '.MuiListItemText-primary': {
-                  color: 'text.primary',
+                bgcolor: (theme) => theme.palette.background.paper === '#121212' 
+                  ? 'rgba(255, 255, 255, 0.12)' 
+                  : 'rgba(0, 0, 0, 0.12)',
+                my: 1,
+                borderRadius: 1,
+                height: 72,
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.background.paper === '#121212'
+                    ? 'rgba(255, 255, 255, 0.16)'
+                    : 'rgba(0, 0, 0, 0.16)',
                 },
               }}
-            />
-          </ListItem>
-        );
-      })}
-    </List>
-  );
+            >
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  border: 2,
+                  borderColor: todo.isDone ? 'primary.main' : 'text.primary',
+                  borderRadius: '50%',
+                  mr: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {todo.isDone && (
+                  <Box
+                    sx={{
+                      width: 12,
+                      height: 12,
+                      bgcolor: 'primary.main',
+                      borderRadius: '50%',
+                    }}
+                  />
+                )}
+              </Box>
+              <ListItemText
+                primary={todo.title}
+                sx={{
+                  textDecoration: todo.isDone ? 'line-through' : 'none',
+                  '.MuiListItemText-primary': {
+                    color: 'text.primary',
+                  },
+                }}
+              />
+            </ListItem>
+          );
+        })}
+      </List>
+    );
+  };
 
   if (!child) {
     return <Typography>Child not found</Typography>;
@@ -241,25 +274,49 @@ const ChildPage: React.FC = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3, py: 14 }}>
-      <IconButton
-        onClick={() => navigate('/')}
-        sx={{
-          position: 'absolute',
-          top: 16,
-          left: 16,
-          bgcolor: (theme) => theme.palette.background.paper === '#121212'
-            ? 'rgba(255, 255, 255, 0.12)'
-            : 'rgba(100, 100, 100, .85)',
-          '&:hover': {
+      <Box sx={{ 
+        position: 'fixed',
+        top: 20,
+        left: 0,
+        right: 0,
+        height: 80,
+        bgcolor: 'background.default',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        px: 3,
+        zIndex: 1000
+      }}>
+        <IconButton
+          onClick={() => navigate('/')}
+          sx={{
             bgcolor: (theme) => theme.palette.background.paper === '#121212'
-              ? 'rgba(255, 255, 255, 0.16)'
-              : 'rgba(100, 100, 100, .5)',
-          },
-          padding: 2,
-        }}
-      >
-        <HomeIcon sx={{ fontSize: 48 }} />
-      </IconButton>
+              ? 'rgba(255, 255, 255, 0.12)'
+              : 'rgba(100, 100, 100, .85)',
+            '&:hover': {
+              bgcolor: (theme) => theme.palette.background.paper === '#121212'
+                ? 'rgba(255, 255, 255, 0.16)'
+                : 'rgba(100, 100, 100, .5)',
+            },
+            padding: 2,
+          }}
+        >
+          <HomeIcon sx={{ fontSize: 48 }} />
+        </IconButton>
+
+        <Typography variant="h4" sx={{ 
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontWeight: 500
+        }}>
+          {format(currentTime, 'MMMM do, yyyy')}
+        </Typography>
+
+        <Typography variant="h5" sx={{ fontWeight: 500 }}>
+          {format(currentTime, 'h:mm a')}
+        </Typography>
+      </Box>
 
       <Grid container spacing={2} sx={{ p: 4 }}>
         <Grid item xs={6}>
