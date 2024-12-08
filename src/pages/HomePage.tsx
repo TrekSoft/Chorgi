@@ -71,7 +71,7 @@ const HomePage: React.FC = () => {
       console.error('Google OAuth Error:', error);
       setError('Failed to connect Google account. Please try again.');
     },
-    scope: 'https://www.googleapis.com/auth/calendar.readonly profile email',
+    scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.readonly profile email',
   });
 
   return (

@@ -130,7 +130,7 @@ const ChildPage: React.FC = () => {
     };
 
     setIsLoadingTodos(true);
-    setTimeout(fetchTodos, 1000); // Wait for Google API to initialize before fetchTodos();
+    setTimeout(fetchTodos, 500); // Wait for Google API to initialize before fetchTodos();
   }, [child?.googleToken, personalCalendars, sharedCalendars, isCalendarInitialized]);
 
   const handlePersonalCalendarsChange = (calendars: string[]) => {
