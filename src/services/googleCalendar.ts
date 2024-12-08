@@ -61,10 +61,9 @@ export const getEventsFromCalendar = async (
     return (response.result.items || []).map(event => ({
       id: event.id,
       title: event.summary || 'Untitled Event',
-      isDone: false,
+      startTime: event.start?.dateTime || event.start?.date || '',
       endTime: event.end?.dateTime || event.end?.date || '',
-      isShared: false,
-      eventId: event.id,
+      isDone: false
     }));
   } catch (error) {
     console.error('Error fetching events:', error);

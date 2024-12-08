@@ -10,9 +10,13 @@ export interface Child {
 export interface TodoItem {
   id: string;
   title: string;
-  isDone: boolean;
+  startTime: string;
   endTime: string;
-  isShared: boolean;
-  eventId: string;
-  completedAt?: string; // Optional timestamp for when todo was completed
+  isDone: boolean;
+  completedAt?: string;
+  completedBy?: {
+    id: string;
+    name: string;
+    avatarUrl: string;
+  };
 }

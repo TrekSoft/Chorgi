@@ -10,6 +10,7 @@ import {
   Paper,
   Typography,
   CircularProgress,
+  Avatar
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import { Child, TodoItem } from '../types';
@@ -110,7 +111,7 @@ const ChildPage: React.FC = () => {
               getEventsFromCalendar(calendarId, start, end)
             )
           );
-          setPersonalTodos(personalEvents.flat());
+          setPersonalTodos(loadCompletionStatus(personalEvents.flat(), false));
         }
 
         if (sharedCalendars.length > 0) {
@@ -120,7 +121,7 @@ const ChildPage: React.FC = () => {
               getEventsFromCalendar(calendarId, start, end)
             )
           );
-          setSharedTodos(sharedEvents.flat());
+          setSharedTodos(loadCompletionStatus(sharedEvents.flat(), true));
         }
       } catch (error) {
         console.error('Error fetching todos:', error);
@@ -133,32 +134,75 @@ const ChildPage: React.FC = () => {
     setTimeout(fetchTodos, 500); // Wait for Google API to initialize before fetchTodos();
   }, [child?.googleToken, personalCalendars, sharedCalendars, isCalendarInitialized]);
 
-  const handlePersonalCalendarsChange = (calendars: string[]) => {
-    setPersonalCalendars(calendars);
-    if (id) {
-      localStorage.setItem(`${id}-personal-calendars`, JSON.stringify(calendars));
-    }
+  const loadCompletionStatus = (todos: TodoItem[], isShared: boolean) => {
+    if (!id) return todos;
+    
+    const today = startOfDay(new Date()).toISOString();
+    const storageKey = isShared 
+      ? `shared-completion-${today}`
+      : `${id}-personal-completion-${today}`;
+    const savedStatus = localStorage.getItem(storageKey);
+    
+    if (!savedStatus) return todos;
+    
+    const completionStatus: Record<string, { 
+      isDone: boolean; 
+      completedAt?: string;
+      completedBy?: {
+        id: string;
+        name: string;
+        avatarUrl: string;
+      };
+    }> = JSON.parse(savedStatus);
+    
+    return todos.map(todo => ({
+      ...todo,
+      isDone: completionStatus[todo.id]?.isDone ?? false,
+      completedAt: completionStatus[todo.id]?.completedAt,
+      completedBy: completionStatus[todo.id]?.completedBy
+    }));
   };
 
-  const handleSharedCalendarsChange = (calendars: string[]) => {
-    setSharedCalendars(calendars);
-    if (id) {
-      localStorage.setItem(`${id}-shared-calendars`, JSON.stringify(calendars));
-    }
+  const saveCompletionStatus = (todos: TodoItem[], isShared: boolean) => {
+    if (!id) return;
+    
+    const today = startOfDay(new Date()).toISOString();
+    const storageKey = isShared 
+      ? `shared-completion-${today}`
+      : `${id}-personal-completion-${today}`;
+    
+    const completionStatus = todos.reduce((acc, todo) => ({
+      ...acc,
+      [todo.id]: {
+        isDone: todo.isDone,
+        completedAt: todo.completedAt,
+        completedBy: todo.completedBy
+      }
+    }), {});
+    
+    localStorage.setItem(storageKey, JSON.stringify(completionStatus));
   };
 
   const toggleTodoStatus = (todo: TodoItem, isShared: boolean) => {
     const updateTodos = (todos: TodoItem[]) => {
-      return todos.map(t => {
+      const updatedTodos = todos.map(t => {
         if (t.id === todo.id) {
+          const newIsDone = !t.isDone;
           return { 
             ...t, 
-            isDone: !t.isDone,
-            completedAt: !t.isDone ? new Date().toISOString() : undefined 
+            isDone: newIsDone,
+            completedAt: newIsDone ? new Date().toISOString() : undefined,
+            completedBy: newIsDone && child ? {
+              id: child.id,
+              name: child.name,
+              avatarUrl: child.avatarUrl
+            } : undefined
           };
         }
         return t;
       });
+      saveCompletionStatus(updatedTodos, isShared);
+      return updatedTodos;
     };
 
     if (isShared) {
@@ -254,18 +298,44 @@ const ChildPage: React.FC = () => {
               </Box>
               <ListItemText
                 primary={todo.title}
+                secondary={isShared && todo.completedBy ? `Completed by ${todo.completedBy.name}` : undefined}
                 sx={{
-                  textDecoration: todo.isDone ? 'line-through' : 'none',
                   '.MuiListItemText-primary': {
+                    textDecoration: todo.isDone ? 'line-through' : 'none',
                     color: 'text.primary',
-                  },
+                  }
                 }}
               />
+              {isShared && todo.completedBy && (
+                <Avatar
+                  src={todo.completedBy.avatarUrl}
+                  alt={todo.completedBy.name}
+                  sx={{ 
+                    width: 32, 
+                    height: 32,
+                    ml: 2
+                  }}
+                />
+              )}
             </ListItem>
           );
         })}
       </List>
     );
+  };
+
+  const handlePersonalCalendarsChange = (calendars: string[]) => {
+    setPersonalCalendars(calendars);
+    if (id) {
+      localStorage.setItem(`${id}-personal-calendars`, JSON.stringify(calendars));
+    }
+  };
+
+  const handleSharedCalendarsChange = (calendars: string[]) => {
+    setSharedCalendars(calendars);
+    if (id) {
+      localStorage.setItem(`${id}-shared-calendars`, JSON.stringify(calendars));
+    }
   };
 
   if (!child) {
