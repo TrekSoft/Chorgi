@@ -8,6 +8,7 @@ import {
   Card,
   CardActionArea,
   Avatar,
+  Link,
 } from '@mui/material';
 import { useGoogleLogin } from '@react-oauth/google';
 import { Child } from '../types';
@@ -219,6 +220,23 @@ const HomePage: React.FC = () => {
       >
         {isLoading ? 'Connecting...' : 'Add Child'}
       </Button>
+
+      {/* Privacy Policy Link */}
+      <Link
+        href="/privacy.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        sx={{
+          color: 'text.secondary',
+          textDecoration: 'none',
+          '&:hover': {
+            textDecoration: 'underline',
+          },
+          mt: 2,
+        }}
+      >
+        Privacy Policy
+      </Link>
     </Box>
   );
 };
