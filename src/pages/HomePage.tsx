@@ -88,7 +88,7 @@ const HomePage: React.FC = () => {
       {/* Logo */}
       <Box
         component="img"
-        src="/Chorgi.png"
+        src="/chorgi.png"
         alt="Chorgi Logo"
         sx={{
           width: 120,
