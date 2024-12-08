@@ -16,6 +16,7 @@ const HomePage: React.FC = () => {
   const [children, setChildren] = useState<Child[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshingChild, setRefreshingChild] = useState<Child | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,6 +75,75 @@ const HomePage: React.FC = () => {
     scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.readonly profile email',
   });
 
+  const refreshLogin = useGoogleLogin({
+    onSuccess: async (response) => {
+      if (!refreshingChild) return;
+
+      const updatedChild = {
+        ...refreshingChild,
+        googleToken: {
+          access_token: response.access_token,
+          token_type: 'Bearer',
+        },
+      };
+      
+      // Update the child in localStorage
+      const savedChildren = localStorage.getItem('children');
+      if (savedChildren) {
+        const children: Child[] = JSON.parse(savedChildren);
+        const updatedChildren = children.map(c => 
+          c.id === refreshingChild.id ? updatedChild : c
+        );
+        localStorage.setItem('children', JSON.stringify(updatedChildren));
+        setChildren(updatedChildren);
+      }
+      
+      // Navigate to child's page
+      navigate(`/child/${refreshingChild.id}`);
+      setRefreshingChild(null);
+    },
+    onError: (error) => {
+      console.error('Google OAuth Error:', error);
+      setError('Failed to refresh Google token. Please try again.');
+      setRefreshingChild(null);
+    },
+    scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.readonly profile email',
+  });
+
+  const validateAndRefreshToken = async (child: Child): Promise<boolean> => {
+    try {
+      // Try to validate the existing token
+      const userInfoResponse = await fetch(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: {
+            Authorization: `Bearer ${child.googleToken.access_token}`,
+          },
+        }
+      );
+      
+      if (userInfoResponse.ok) {
+        return true;
+      }
+      
+      // Token is invalid, trigger refresh
+      setRefreshingChild(child);
+      refreshLogin();
+      return false;
+    } catch (error) {
+      console.error('Error validating token:', error);
+      setError('Failed to validate Google token. Please try again.');
+      return false;
+    }
+  };
+
+  const handleChildClick = async (child: Child) => {
+    const isValid = await validateAndRefreshToken(child);
+    if (isValid) {
+      navigate(`/child/${child.id}`);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -118,7 +188,7 @@ const HomePage: React.FC = () => {
           <Grid item xs={12} sm={6} md={4} key={child.id}>
             <Card>
               <CardActionArea
-                onClick={() => navigate(`/child/${child.id}`)}
+                onClick={() => handleChildClick(child)}
                 sx={{
                   display: 'flex',
                   flexDirection: 'column',
