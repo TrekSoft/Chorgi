@@ -4,7 +4,12 @@ export interface Child {
   avatarUrl: string;
   googleId: string;
   calendarId: string;
-  googleToken?: any; // Store the Google OAuth token
+  googleToken: {
+    access_token: string;
+    refresh_token: string;
+    token_type: string;
+    expiry_date: number;
+  };
 }
 
 export interface TodoItem {
