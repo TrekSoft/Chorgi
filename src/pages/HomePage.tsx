@@ -100,6 +100,65 @@ const HomePage: React.FC = () => {
     scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.readonly profile email',
   });
 
+  const refreshAccessToken = async (child: Child): Promise<boolean> => {
+    try {
+      const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID!,
+          client_secret: process.env.REACT_APP_GOOGLE_CLIENT_SECRET!,
+          refresh_token: child.googleToken.refresh_token,
+          grant_type: 'refresh_token',
+        }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const tokens = await response.json();
+      
+      // Update the child's token in state and localStorage
+      const updatedChild = {
+        ...child,
+        googleToken: {
+          ...child.googleToken,
+          access_token: tokens.access_token,
+          expiry_date: Date.now() + (tokens.expires_in * 1000),
+        },
+      };
+
+      const updatedChildren = children.map(c => 
+        c.id === child.id ? updatedChild : c
+      );
+      setChildren(updatedChildren);
+      localStorage.setItem('children', JSON.stringify(updatedChildren));
+      
+      return true;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return false;
+    }
+  };
+
+  const handleChildClick = async (child: Child) => {
+    // Check if token is expired (with 5 minute buffer)
+    const isExpired = true;
+    
+    if (isExpired) {
+      const success = await refreshAccessToken(child);
+      if (!success) {
+        setError('Failed to refresh access token. Please try logging in again.');
+        return;
+      }
+    }
+    
+    navigate(`/child/${child.id}`);
+  };
+
   return (
     <Box
       sx={{
@@ -144,7 +203,7 @@ const HomePage: React.FC = () => {
           <Grid item xs={12} sm={6} md={4} key={child.id}>
             <Card>
               <CardActionArea
-                onClick={() => navigate(`/child/${child.id}`)}
+                onClick={() => handleChildClick(child)}
                 sx={{
                   display: 'flex',
                   flexDirection: 'column',
