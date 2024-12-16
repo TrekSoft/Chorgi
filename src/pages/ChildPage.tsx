@@ -121,7 +121,8 @@ const ChildPage: React.FC = () => {
               getEventsFromCalendar(calendarId, start, end)
             )
           );
-          setSharedTodos(loadCompletionStatus(sharedEvents.flat(), true));
+          const filteredEvents = sharedEvents.flat().filter(event => event.isShared);
+          setSharedTodos(loadCompletionStatus(filteredEvents, true));
         }
       } catch (error) {
         console.error('Error fetching todos:', error);

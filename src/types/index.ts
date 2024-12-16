@@ -24,4 +24,5 @@ export interface TodoItem {
     name: string;
     avatarUrl: string;
   };
+  isShared?: boolean;
 }

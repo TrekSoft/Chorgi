@@ -151,7 +151,11 @@ const HomePage: React.FC = () => {
     if (isExpired) {
       const success = await refreshAccessToken(child);
       if (!success) {
-        setError('Failed to refresh access token. Please try logging in again.');
+        // Remove child from state and localStorage
+        const updatedChildren = children.filter(c => c.id !== child.id);
+        setChildren(updatedChildren);
+        localStorage.setItem('children', JSON.stringify(updatedChildren));
+        setError('Failed to refresh access token. Please add the child again.');
         return;
       }
     }

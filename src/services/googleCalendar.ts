@@ -63,7 +63,8 @@ export const getEventsFromCalendar = async (
       title: event.summary || 'Untitled Event',
       startTime: event.start?.dateTime || event.start?.date || '',
       endTime: event.end?.dateTime || event.end?.date || '',
-      isDone: false
+      isDone: false,
+      isShared: !event.attendees?.length
     }));
   } catch (error) {
     console.error('Error fetching events:', error);

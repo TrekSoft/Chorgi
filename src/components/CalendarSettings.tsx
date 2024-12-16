@@ -7,7 +7,6 @@ import {
   ListItemButton,
   ListItemText,
   Checkbox,
-  Typography,
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { listCalendars, initializeGoogleCalendar, setStoredToken } from '../services/googleCalendar';
