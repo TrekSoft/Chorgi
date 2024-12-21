@@ -213,6 +213,10 @@ const ChildPage: React.FC = () => {
     }
   };
 
+  const isOverduePersonalChore = (todo: TodoItem, isShared: boolean) => {
+    return !isShared && !isAfter(new Date(todo.endTime), new Date()) && !todo.isDone;
+  };
+
   const sortTodos = (todos: TodoItem[], isShared: boolean) => {
     const now = new Date();
     
@@ -271,7 +275,7 @@ const ChildPage: React.FC = () => {
           return (
             <ListItem
               key={todo.id}
-              onClick={() => isShared || isAfter(new Date(todo.endTime), new Date()) ? toggleTodoStatus(todo, isShared) : undefined}
+              onClick={() => !isOverduePersonalChore(todo, isShared) ? toggleTodoStatus(todo, isShared) : undefined}
               sx={{
                 bgcolor: (theme) => theme.palette.background.paper === '#121212' 
                   ? 'rgba(255, 255, 255, 0.12)' 
@@ -279,9 +283,9 @@ const ChildPage: React.FC = () => {
                 my: 1,
                 borderRadius: 1,
                 height: 72,
-                cursor: isShared || isAfter(new Date(todo.endTime), new Date()) ? 'pointer' : 'default',
+                cursor: !isOverduePersonalChore(todo, isShared) ? 'pointer' : 'default',
                 '&:hover': {
-                  bgcolor: (theme) => isShared || isAfter(new Date(todo.endTime), new Date())
+                  bgcolor: (theme) => !isOverduePersonalChore(todo, isShared)
                     ? theme.palette.background.paper === '#121212'
                       ? 'rgba(255, 255, 255, 0.16)'
                       : 'rgba(0, 0, 0, 0.16)'
@@ -298,7 +302,7 @@ const ChildPage: React.FC = () => {
                   border: 2,
                   borderColor: todo.isDone 
                     ? 'primary.main' 
-                    : !isShared && !isAfter(new Date(todo.endTime), new Date()) 
+                    : isOverduePersonalChore(todo, isShared)
                       ? 'error.main' 
                       : 'text.primary',
                   borderRadius: '50%',
@@ -306,7 +310,7 @@ const ChildPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: !isShared && !isAfter(new Date(todo.endTime), new Date()) && !todo.isDone ? 0 : 1,
+                  opacity: isOverduePersonalChore(todo, isShared) ? 0 : 1,
                 }}
               >
                 {todo.isDone && (
@@ -326,7 +330,7 @@ const ChildPage: React.FC = () => {
                   isShared && todo.completedBy 
                     ? `Completed by ${todo.completedBy.name}` 
                     : !isShared && !todo.completedBy
-                      ? !isAfter(new Date(todo.endTime), new Date())
+                      ? isOverduePersonalChore(todo, isShared)
                         ? "Chore not completed on time"
                         : todo.endTime.includes('T') 
                           ? `Complete by ${format(new Date(todo.endTime), 'h:mm a')}`
@@ -337,15 +341,15 @@ const ChildPage: React.FC = () => {
                   '.MuiListItemText-primary': {
                     textDecoration: todo.isDone 
                       ? 'line-through' 
-                      : !isShared && !isAfter(new Date(todo.endTime), new Date()) 
+                      : isOverduePersonalChore(todo, isShared)
                         ? 'line-through' 
                         : 'none',
-                    color: !isShared && !todo.isDone && !isAfter(new Date(todo.endTime), new Date())
+                    color: isOverduePersonalChore(todo, isShared)
                       ? 'error.main'
                       : 'text.primary',
                   },
                   '.MuiListItemText-secondary': {
-                    color: !isShared && !todo.isDone && !isAfter(new Date(todo.endTime), new Date())
+                    color: isOverduePersonalChore(todo, isShared)
                       ? 'error.main'
                       : 'text.secondary',
                   }
