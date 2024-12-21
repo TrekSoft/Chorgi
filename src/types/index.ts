@@ -4,6 +4,7 @@ export interface Child {
   avatarUrl: string;
   googleId: string;
   calendarId: string;
+  birthdate?: string;  // ISO date string from Google People API
   googleToken: {
     access_token: string;
     refresh_token: string;

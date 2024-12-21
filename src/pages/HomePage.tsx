@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { useGoogleLogin } from '@react-oauth/google';
 import { Child } from '../types';
+import { differenceInDays, parse, addYears, isAfter } from 'date-fns';
 
 const HomePage: React.FC = () => {
   const [children, setChildren] = useState<Child[]>([]);
@@ -25,6 +26,20 @@ const HomePage: React.FC = () => {
       setChildren(JSON.parse(savedChildren));
     }
   }, []);
+
+  const getDaysUntilBirthday = (birthdate?: string) => {
+    if (!birthdate) return null;
+    
+    const today = new Date();
+    const birthdateObj = parse(birthdate, 'yyyy-MM-dd', new Date());
+    let nextBirthday = new Date(today.getFullYear(), birthdateObj.getMonth(), birthdateObj.getDate());
+    
+    if (isAfter(today, nextBirthday)) {
+      nextBirthday = addYears(nextBirthday, 1);
+    }
+    
+    return differenceInDays(nextBirthday, today);
+  };
 
   const login = useGoogleLogin({
     flow: 'auth-code',
@@ -68,6 +83,25 @@ const HomePage: React.FC = () => {
         }
         
         const userInfo = await userInfoResponse.json();
+
+        // Get birthdate from Google People API
+        const peopleResponse = await fetch(
+          'https://people.googleapis.com/v1/people/me?personFields=birthdays',
+          {
+            headers: {
+              Authorization: `Bearer ${tokens.access_token}`,
+            },
+          }
+        );
+
+        let birthdate: string | undefined;
+        if (peopleResponse.ok) {
+          const peopleData = await peopleResponse.json();
+          const birthday = peopleData.birthdays?.[0]?.date;
+          if (birthday) {
+            birthdate = `${birthday.year || '2000'}-${String(birthday.month).padStart(2, '0')}-${String(birthday.day).padStart(2, '0')}`;
+          }
+        }
         
         const newChild: Child = {
           id: crypto.randomUUID(),
@@ -75,6 +109,7 @@ const HomePage: React.FC = () => {
           avatarUrl: userInfo.picture,
           googleId: userInfo.sub,
           calendarId: userInfo.email,
+          birthdate,
           googleToken: {
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,
@@ -97,7 +132,7 @@ const HomePage: React.FC = () => {
       console.error('Google OAuth Error:', error);
       setError('Failed to connect Google account. Please try again.');
     },
-    scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.readonly profile email',
+    scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/user.birthday.read profile email',
   });
 
   const refreshAccessToken = async (child: Child): Promise<boolean> => {
@@ -174,7 +209,6 @@ const HomePage: React.FC = () => {
         p: 3,
       }}
     >
-      {/* Logo */}
       <Box
         component="img"
         src="/chorgi.png"
@@ -186,7 +220,6 @@ const HomePage: React.FC = () => {
         }}
       />
 
-      {/* Title */}
       <Typography
         variant="h2"
         component="h1"
@@ -201,7 +234,6 @@ const HomePage: React.FC = () => {
         </Typography>
       )}
 
-      {/* Children Grid */}
       <Grid container spacing={3} sx={{ maxWidth: 1200, mx: 'auto' }}>
         {children.map((child) => (
           <Grid item xs={12} sm={6} md={4} key={child.id}>
@@ -212,24 +244,28 @@ const HomePage: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  p: 3,
+                  p: 2,
                 }}
               >
                 <Avatar
                   src={child.avatarUrl}
                   alt={child.name}
-                  sx={{ width: 80, height: 80, mb: 2 }}
+                  sx={{ width: 80, height: 80, mb: 1 }}
                 />
                 <Typography variant="h6" component="div">
                   {child.name}
                 </Typography>
+                {child.birthdate && (
+                  <Typography variant="body2" color="text.secondary">
+                    {getDaysUntilBirthday(child.birthdate)} days until birthday
+                  </Typography>
+                )}
               </CardActionArea>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      {/* Add Child Button */}
       <Button
         variant="contained"
         onClick={() => login()}
@@ -239,7 +275,6 @@ const HomePage: React.FC = () => {
         {isLoading ? 'Connecting...' : 'Add Child'}
       </Button>
 
-      {/* Privacy Policy Link */}
       <Link
         href="/privacy.html"
         target="_blank"
