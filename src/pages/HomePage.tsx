@@ -38,7 +38,13 @@ const HomePage: React.FC = () => {
       nextBirthday = addYears(nextBirthday, 1);
     }
     
-    return differenceInDays(nextBirthday, today);
+    return differenceInDays(nextBirthday, today) + 1;
+  };
+
+  const getBirthdayText = (birthdate?: string) => {
+    if (!birthdate) return null;
+    const daysUntil = getDaysUntilBirthday(birthdate);
+    return daysUntil === 365 ? "Happy Birthday!! 🎉" : `${daysUntil} days until birthday`;
   };
 
   const login = useGoogleLogin({
@@ -257,7 +263,7 @@ const HomePage: React.FC = () => {
                 </Typography>
                 {child.birthdate && (
                   <Typography variant="body2" color="text.secondary">
-                    {getDaysUntilBirthday(child.birthdate)} days until birthday
+                    {getBirthdayText(child.birthdate)}
                   </Typography>
                 )}
               </CardActionArea>
