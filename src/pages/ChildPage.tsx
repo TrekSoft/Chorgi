@@ -213,15 +213,26 @@ const ChildPage: React.FC = () => {
     }
   };
 
-  const sortTodos = (todos: TodoItem[]) => {
+  const sortTodos = (todos: TodoItem[], isShared: boolean) => {
     const now = new Date();
+    
+    if (isShared) {
+      // For shared todos, only sort by completion status
+      const incomplete = todos.filter(todo => !todo.isDone);
+      const completed = todos
+        .filter(todo => todo.isDone)
+        .sort((a, b) => {
+          const aTime = new Date(a.completedAt || a.endTime).getTime();
+          const bTime = new Date(b.completedAt || b.endTime).getTime();
+          return bTime - aTime;  // Most recent first
+        });
+      return [...incomplete, ...completed];
+    }
+    
+    // For personal todos, sort by completion status and overdue status
     const incomplete = todos.filter(
       todo => !todo.isDone && isAfter(new Date(todo.endTime), now)
     );
-    const missed = todos.filter(
-      todo => !todo.isDone && !isAfter(new Date(todo.endTime), now)
-    );
-    // Sort completed items by completion time, most recent first
     const completed = todos
       .filter(todo => todo.isDone)
       .sort((a, b) => {
@@ -229,8 +240,11 @@ const ChildPage: React.FC = () => {
         const bTime = new Date(b.completedAt || b.endTime).getTime();
         return bTime - aTime;  // Most recent first
       });
+    const overdue = todos.filter(
+      todo => !todo.isDone && !isAfter(new Date(todo.endTime), now)
+    );
 
-    return [...incomplete, ...missed, ...completed];
+    return [...incomplete, ...completed, ...overdue];
   };
 
   const renderTodoList = (todos: TodoItem[], isShared: boolean) => {
@@ -253,11 +267,11 @@ const ChildPage: React.FC = () => {
 
     return (
       <List>
-        {sortTodos(todos).map((todo) => {
+        {sortTodos(todos, isShared).map((todo) => {
           return (
             <ListItem
               key={todo.id}
-              onClick={() => toggleTodoStatus(todo, isShared)}
+              onClick={() => isShared || isAfter(new Date(todo.endTime), new Date()) ? toggleTodoStatus(todo, isShared) : undefined}
               sx={{
                 bgcolor: (theme) => theme.palette.background.paper === '#121212' 
                   ? 'rgba(255, 255, 255, 0.12)' 
@@ -265,11 +279,15 @@ const ChildPage: React.FC = () => {
                 my: 1,
                 borderRadius: 1,
                 height: 72,
-                cursor: 'pointer',
+                cursor: isShared || isAfter(new Date(todo.endTime), new Date()) ? 'pointer' : 'default',
                 '&:hover': {
-                  bgcolor: (theme) => theme.palette.background.paper === '#121212'
-                    ? 'rgba(255, 255, 255, 0.16)'
-                    : 'rgba(0, 0, 0, 0.16)',
+                  bgcolor: (theme) => isShared || isAfter(new Date(todo.endTime), new Date())
+                    ? theme.palette.background.paper === '#121212'
+                      ? 'rgba(255, 255, 255, 0.16)'
+                      : 'rgba(0, 0, 0, 0.16)'
+                    : theme.palette.background.paper === '#121212'
+                      ? 'rgba(255, 255, 255, 0.12)'
+                      : 'rgba(0, 0, 0, 0.12)',
                 },
               }}
             >
@@ -278,12 +296,17 @@ const ChildPage: React.FC = () => {
                   width: 24,
                   height: 24,
                   border: 2,
-                  borderColor: todo.isDone ? 'primary.main' : 'text.primary',
+                  borderColor: todo.isDone 
+                    ? 'primary.main' 
+                    : !isShared && !isAfter(new Date(todo.endTime), new Date()) 
+                      ? 'error.main' 
+                      : 'text.primary',
                   borderRadius: '50%',
                   mr: 2,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  opacity: !isShared && !isAfter(new Date(todo.endTime), new Date()) && !todo.isDone ? 0 : 1,
                 }}
               >
                 {todo.isDone && (
@@ -299,11 +322,32 @@ const ChildPage: React.FC = () => {
               </Box>
               <ListItemText
                 primary={todo.title}
-                secondary={isShared && todo.completedBy ? `Completed by ${todo.completedBy.name}` : undefined}
+                secondary={
+                  isShared && todo.completedBy 
+                    ? `Completed by ${todo.completedBy.name}` 
+                    : !isShared && !todo.completedBy
+                      ? !isAfter(new Date(todo.endTime), new Date())
+                        ? "Chore not completed on time"
+                        : todo.endTime.includes('T') 
+                          ? `Complete by ${format(new Date(todo.endTime), 'h:mm a')}`
+                          : 'Complete by end of day'
+                      : undefined
+                }
                 sx={{
                   '.MuiListItemText-primary': {
-                    textDecoration: todo.isDone ? 'line-through' : 'none',
-                    color: 'text.primary',
+                    textDecoration: todo.isDone 
+                      ? 'line-through' 
+                      : !isShared && !isAfter(new Date(todo.endTime), new Date()) 
+                        ? 'line-through' 
+                        : 'none',
+                    color: !isShared && !todo.isDone && !isAfter(new Date(todo.endTime), new Date())
+                      ? 'error.main'
+                      : 'text.primary',
+                  },
+                  '.MuiListItemText-secondary': {
+                    color: !isShared && !todo.isDone && !isAfter(new Date(todo.endTime), new Date())
+                      ? 'error.main'
+                      : 'text.secondary',
                   }
                 }}
               />
