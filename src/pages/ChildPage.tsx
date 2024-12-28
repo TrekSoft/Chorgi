@@ -111,7 +111,10 @@ const ChildPage: React.FC = () => {
               getEventsFromCalendar(calendarId, start, end)
             )
           );
-          setPersonalTodos(loadCompletionStatus(personalEvents.flat(), false));
+          const filteredPersonalTodos = personalEvents.flat().filter(todo => 
+            !todo.startTime || isAfter(currentTime, new Date(todo.startTime))
+          );
+          setPersonalTodos(loadCompletionStatus(filteredPersonalTodos, false));
         }
 
         if (sharedCalendars.length > 0) {
@@ -121,7 +124,10 @@ const ChildPage: React.FC = () => {
               getEventsFromCalendar(calendarId, start, end)
             )
           );
-          const filteredEvents = sharedEvents.flat().filter(event => event.isShared);
+          const filteredSharedTodos = sharedEvents.flat().filter(todo => 
+            !todo.startTime || isAfter(currentTime, new Date(todo.startTime))
+          );
+          const filteredEvents = filteredSharedTodos.filter(event => event.isShared);
           setSharedTodos(loadCompletionStatus(filteredEvents, true));
         }
       } catch (error) {
@@ -133,7 +139,7 @@ const ChildPage: React.FC = () => {
 
     setIsLoadingTodos(true);
     setTimeout(fetchTodos, 500); // Wait for Google API to initialize before fetchTodos();
-  }, [child?.googleToken, personalCalendars, sharedCalendars, isCalendarInitialized]);
+  }, [child?.googleToken, personalCalendars, sharedCalendars, isCalendarInitialized, currentTime]);
 
   const loadCompletionStatus = (todos: TodoItem[], isShared: boolean) => {
     if (!id) return todos;
