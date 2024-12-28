@@ -278,18 +278,16 @@ const ChildPage: React.FC = () => {
                 borderRadius: 1,
                 height: 72,
                 cursor: !isOverdueChore(todo) ? 'pointer' : 'default',
-                '&:hover': {
+                '&:hover': !isOverdueChore(todo) ? {
                   bgcolor: todo.backgroundColor 
-                    ? `${todo.backgroundColor}dd`  // Add transparency to the hover state
-                    : ((theme) => !isOverdueChore(todo)
-                      ? theme.palette.background.paper === '#121212'
-                        ? 'rgba(255, 255, 255, 0.16)'
-                        : 'rgba(0, 0, 0, 0.16)'
-                      : theme.palette.background.paper === '#121212'
-                        ? 'rgba(255, 255, 255, 0.12)'
-                        : 'rgba(0, 0, 0, 0.12)'),
-                },
-                opacity: todo.backgroundColor ? 0.9 : 1, // Slightly transparent if it has a color
+                    ? (theme) => theme.palette.mode === 'dark'
+                      ? `color-mix(in srgb, ${todo.backgroundColor}, black 10%)`
+                      : `color-mix(in srgb, ${todo.backgroundColor}, black 15%)`
+                    : (theme) => theme.palette.background.paper === '#121212'
+                      ? 'rgba(255, 255, 255, 0.16)'
+                      : 'rgba(0, 0, 0, 0.16)',
+                } : {},
+                opacity: todo.backgroundColor ? 0.9 : 1,
               }}
             >
               <Box
