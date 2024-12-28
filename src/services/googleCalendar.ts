@@ -3,6 +3,21 @@ import { TodoItem } from '../types';
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
 
+// Google Calendar color IDs mapped to CSS variables
+const COLOR_MAP: { [key: string]: string } = {
+  '1': 'var(--calendar-blue)',
+  '2': 'var(--calendar-green)',
+  '3': 'var(--calendar-purple)',
+  '4': 'var(--calendar-red)',
+  '5': 'var(--calendar-yellow)',
+  '6': 'var(--calendar-orange)',
+  '7': 'var(--calendar-turquoise)',
+  '8': 'var(--calendar-gray)',
+  '9': 'var(--calendar-bold-blue)',
+  '10': 'var(--calendar-bold-green)',
+  '11': 'var(--calendar-bold-red)',
+};
+
 let gapiInited = false;
 let gisInited = false;
 let tokenClient: google.accounts.oauth2.TokenClient;
@@ -56,7 +71,8 @@ export const getEventsFromCalendar = async (
       timeMax: timeMax.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
-    });
+      fields: 'items(id,summary,start,end,attendees,colorId)'
+    } as gapi.client.calendar.EventsListParameters);
 
     return (response.result.items || []).map(event => ({
       id: event.id,
@@ -64,7 +80,12 @@ export const getEventsFromCalendar = async (
       startTime: event.start?.dateTime || event.start?.date || '',
       endTime: event.end?.dateTime || event.end?.date || '',
       isDone: false,
-      isShared: !event.attendees?.length
+      isShared: !event.attendees?.length,
+      backgroundColor: event.colorId ? COLOR_MAP[event.colorId] : undefined,
+      attendees: event.attendees?.map(attendee => ({
+        email: attendee.email || '',
+        responseStatus: attendee.responseStatus
+      }))
     }));
   } catch (error) {
     console.error('Error fetching events:', error);

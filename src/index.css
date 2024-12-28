@@ -11,3 +11,17 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+:root {
+  --calendar-blue: #4285f4;
+  --calendar-green: #0f9d58;
+  --calendar-purple: #a142f4;
+  --calendar-red: #db4437;
+  --calendar-yellow: #f4b400;
+  --calendar-orange: #ff7537;
+  --calendar-turquoise: #00c4cc;
+  --calendar-gray: #9e9e9e;
+  --calendar-bold-blue: #1a73e8;
+  --calendar-bold-green: #0b8043;
+  --calendar-bold-red: #c5221f;
+}

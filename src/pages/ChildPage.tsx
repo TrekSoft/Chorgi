@@ -112,7 +112,8 @@ const ChildPage: React.FC = () => {
             )
           );
           const filteredPersonalTodos = personalEvents.flat().filter(todo => 
-            !todo.startTime || isAfter(currentTime, new Date(todo.startTime))
+            (!todo.startTime || isAfter(currentTime, new Date(todo.startTime))) &&
+            (todo.attendees?.some(attendee => attendee.email === child?.calendarId))
           );
           setPersonalTodos(loadCompletionStatus(filteredPersonalTodos, false));
         }
@@ -270,22 +271,25 @@ const ChildPage: React.FC = () => {
               key={todo.id}
               onClick={() => !isOverdueChore(todo) ? toggleTodoStatus(todo, isShared) : undefined}
               sx={{
-                bgcolor: (theme) => theme.palette.background.paper === '#121212' 
+                bgcolor: todo.backgroundColor || ((theme) => theme.palette.background.paper === '#121212' 
                   ? 'rgba(255, 255, 255, 0.12)' 
-                  : 'rgba(0, 0, 0, 0.12)',
+                  : 'rgba(0, 0, 0, 0.12)'),
                 my: 1,
                 borderRadius: 1,
                 height: 72,
                 cursor: !isOverdueChore(todo) ? 'pointer' : 'default',
                 '&:hover': {
-                  bgcolor: (theme) => !isOverdueChore(todo)
-                    ? theme.palette.background.paper === '#121212'
-                      ? 'rgba(255, 255, 255, 0.16)'
-                      : 'rgba(0, 0, 0, 0.16)'
-                    : theme.palette.background.paper === '#121212'
-                      ? 'rgba(255, 255, 255, 0.12)'
-                      : 'rgba(0, 0, 0, 0.12)',
+                  bgcolor: todo.backgroundColor 
+                    ? `${todo.backgroundColor}dd`  // Add transparency to the hover state
+                    : ((theme) => !isOverdueChore(todo)
+                      ? theme.palette.background.paper === '#121212'
+                        ? 'rgba(255, 255, 255, 0.16)'
+                        : 'rgba(0, 0, 0, 0.16)'
+                      : theme.palette.background.paper === '#121212'
+                        ? 'rgba(255, 255, 255, 0.12)'
+                        : 'rgba(0, 0, 0, 0.12)'),
                 },
+                opacity: todo.backgroundColor ? 0.9 : 1, // Slightly transparent if it has a color
               }}
             >
               <Box

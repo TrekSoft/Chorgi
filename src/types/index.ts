@@ -26,4 +26,9 @@ export interface TodoItem {
     avatarUrl: string;
   };
   isShared?: boolean;
+  backgroundColor?: string;
+  attendees?: Array<{
+    email: string;
+    responseStatus?: string;
+  }>;
 }
