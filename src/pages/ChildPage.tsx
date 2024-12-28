@@ -408,14 +408,35 @@ const ChildPage: React.FC = () => {
           <HomeIcon sx={{ fontSize: 48 }} />
         </IconButton>
 
-        <Typography variant="h4" sx={{ 
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          fontWeight: 500
-        }}>
-          {format(currentTime, 'MMMM do, yyyy')}
-        </Typography>
+        <Box sx={{ p: 2 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sx={{ textAlign: 'center', mb: 2, mt: '30px' }}>
+              <Typography variant="h4">
+                {format(currentTime, 'MMMM d, yyyy')}
+              </Typography>
+              {child && (
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    gap: 2,
+                    mt: 1 
+                  }}
+                >
+                  <Avatar 
+                    src={child.avatarUrl} 
+                    alt={`${child.name}'s avatar`}
+                    sx={{ width: 48, height: 48 }}
+                  />
+                  <Typography variant="h5" color="textSecondary">
+                    {child.name}
+                  </Typography>
+                </Box>
+              )}
+            </Grid>
+          </Grid>
+        </Box>
 
         <Typography variant="h5" sx={{ fontWeight: 500 }}>
           {format(currentTime, 'h:mm a')}
