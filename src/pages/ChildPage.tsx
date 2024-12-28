@@ -287,7 +287,6 @@ const ChildPage: React.FC = () => {
                       ? 'rgba(255, 255, 255, 0.16)'
                       : 'rgba(0, 0, 0, 0.16)',
                 } : {},
-                opacity: todo.backgroundColor ? 0.9 : 1,
               }}
             >
               <Box

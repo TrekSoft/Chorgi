@@ -13,15 +13,15 @@ code {
 }
 
 :root {
-  --calendar-blue: #1a53b9;
-  --calendar-green: #0b7841;
-  --calendar-purple: #7b1fa2;
-  --calendar-red: #b71c1c;
-  --calendar-yellow: #b36c00;
-  --calendar-orange: #c43e00;
-  --calendar-turquoise: #00838f;
+  --calendar-blue: #7986CB;
+  --calendar-green: #33B679;
+  --calendar-purple: #8E24AA;
+  --calendar-red: #E67C73;
+  --calendar-yellow: #F6BF26;
+  --calendar-orange: #F4511E;
+  --calendar-turquoise: #039BE5;
   --calendar-gray: #616161;
-  --calendar-bold-blue: #1565c0;
-  --calendar-bold-green: #2e7d32;
-  --calendar-bold-red: #c62828;
+  --calendar-bold-blue: #3F51B5;
+  --calendar-bold-green: #0B8043;
+  --calendar-bold-red: #D50000;
 }
