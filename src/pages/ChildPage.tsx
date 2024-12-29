@@ -342,8 +342,20 @@ const ChildPage: React.FC = () => {
                     :  isOverdueChore(todo)
                         ? "Chore not completed on time"
                         : todo.endTime.includes('T') 
-                          ? `Complete by ${format(new Date(todo.endTime), 'h:mm a')}`
-                          : 'Complete by end of day'
+                          ? (() => {
+                              const endDate = new Date(todo.endTime);
+                              const today = new Date();
+                              return endDate.toDateString() === today.toDateString()
+                                ? `Complete by ${format(endDate, 'h:mm a')}`
+                                : `Complete by ${format(endDate, 'MMM d')} at ${format(endDate, 'h:mm a')}`;
+                            })()
+                          : (() => {
+                              const endDate = new Date(todo.endTime);
+                              const today = new Date();
+                              return endDate.toDateString() === today.toDateString()
+                                ? 'Complete by end of day'
+                                : `Complete by end of ${format(endDate, 'MMM d')}`;
+                            })()
                 }
                 sx={{
                   '.MuiListItemText-primary': {
