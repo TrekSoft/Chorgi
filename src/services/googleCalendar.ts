@@ -65,28 +65,49 @@ export const getEventsFromCalendar = async (
   timeMax: Date
 ): Promise<TodoItem[]> => {
   try {
+    // Extend timeMin to the start of the day and timeMax to the end of the day
+    // This ensures we get events that might have started before but are still ongoing
+    const extendedTimeMin = startOfDay(timeMin);
+    const extendedTimeMax = endOfDay(timeMax);
+
     const response = await gapi.client.calendar.events.list({
       calendarId,
-      timeMin: timeMin.toISOString(),
-      timeMax: timeMax.toISOString(),
+      // Use extended time range for fetching
+      timeMin: extendedTimeMin.toISOString(),
+      timeMax: extendedTimeMax.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
       fields: 'items(id,summary,start,end,attendees,colorId)'
     } as gapi.client.calendar.EventsListParameters);
 
-    return (response.result.items || []).map(event => ({
-      id: event.id,
-      title: event.summary || 'Untitled Event',
-      startTime: event.start?.dateTime || event.start?.date || '',
-      endTime: event.end?.dateTime || event.end?.date || '',
-      isDone: false,
-      isShared: !event.attendees?.length,
-      backgroundColor: event.colorId ? COLOR_MAP[event.colorId] : undefined,
-      attendees: event.attendees?.map(attendee => ({
-        email: attendee.email || '',
-        responseStatus: attendee.responseStatus
-      }))
-    }));
+    return (response.result.items || [])
+      .filter(event => {
+        const eventStart = new Date(event.start?.dateTime || event.start?.date || '');
+        const eventEnd = new Date(event.end?.dateTime || event.end?.date || '');
+        
+        // Include events that:
+        // 1. Start during the day
+        // 2. End during the day
+        // 3. Span across the day (start before and end after)
+        return (
+          (eventStart >= extendedTimeMin && eventStart <= extendedTimeMax) || // Starts during the day
+          (eventEnd >= extendedTimeMin && eventEnd <= extendedTimeMax) || // Ends during the day
+          (eventStart <= extendedTimeMin && eventEnd >= extendedTimeMax) // Spans across the day
+        );
+      })
+      .map(event => ({
+        id: event.id,
+        title: event.summary || 'Untitled Event',
+        startTime: event.start?.dateTime || event.start?.date || '',
+        endTime: event.end?.dateTime || event.end?.date || '',
+        isDone: false,
+        isShared: !event.attendees?.length,
+        backgroundColor: event.colorId ? COLOR_MAP[event.colorId] : undefined,
+        attendees: event.attendees?.map(attendee => ({
+          email: attendee.email || '',
+          responseStatus: attendee.responseStatus
+        }))
+      }));
   } catch (error) {
     console.error('Error fetching events:', error);
     return [];
@@ -110,4 +131,17 @@ export const handleAuthClick = () => {
 
 export const isSignedIn = () => {
   return gapi.client.getToken() !== null;
+};
+
+// Helper functions to get the start and end of a day
+const startOfDay = (date: Date) => {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  return start;
+};
+
+const endOfDay = (date: Date) => {
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return end;
 };

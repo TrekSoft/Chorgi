@@ -145,50 +145,66 @@ const ChildPage: React.FC = () => {
   const loadCompletionStatus = (todos: TodoItem[], isShared: boolean) => {
     if (!id) return todos;
     
-    const today = startOfDay(new Date()).toISOString();
-    const storageKey = isShared 
-      ? `shared-completion-${today}`
-      : `${id}-personal-completion-${today}`;
-    const savedStatus = localStorage.getItem(storageKey);
-    
-    if (!savedStatus) return todos;
-    
-    const completionStatus: Record<string, { 
-      isDone: boolean; 
-      completedAt?: string;
-      completedBy?: {
-        id: string;
-        name: string;
-        avatarUrl: string;
+    return todos.map(todo => {
+      const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
+      const storageKey = isShared 
+        ? `shared-completion-${eventStartDate}`
+        : `${id}-personal-completion-${eventStartDate}`;
+      const savedStatus = localStorage.getItem(storageKey);
+      
+      if (!savedStatus) return todo;
+      
+      const completionStatus: Record<string, { 
+        isDone: boolean; 
+        completedAt?: string;
+        completedBy?: {
+          id: string;
+          name: string;
+          avatarUrl: string;
+        };
+      }> = JSON.parse(savedStatus);
+      
+      return {
+        ...todo,
+        isDone: completionStatus[todo.id]?.isDone ?? false,
+        completedAt: completionStatus[todo.id]?.completedAt,
+        completedBy: completionStatus[todo.id]?.completedBy
       };
-    }> = JSON.parse(savedStatus);
-    
-    return todos.map(todo => ({
-      ...todo,
-      isDone: completionStatus[todo.id]?.isDone ?? false,
-      completedAt: completionStatus[todo.id]?.completedAt,
-      completedBy: completionStatus[todo.id]?.completedBy
-    }));
+    });
   };
 
   const saveCompletionStatus = (todos: TodoItem[], isShared: boolean) => {
     if (!id) return;
-    
-    const today = startOfDay(new Date()).toISOString();
-    const storageKey = isShared 
-      ? `shared-completion-${today}`
-      : `${id}-personal-completion-${today}`;
-    
-    const completionStatus = todos.reduce((acc, todo) => ({
-      ...acc,
-      [todo.id]: {
-        isDone: todo.isDone,
-        completedAt: todo.completedAt,
-        completedBy: todo.completedBy
+
+    // Group todos by their start date
+    const todosByStartDate = todos.reduce((acc, todo) => {
+      const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
+      if (!acc[eventStartDate]) {
+        acc[eventStartDate] = [];
       }
-    }), {});
-    
-    localStorage.setItem(storageKey, JSON.stringify(completionStatus));
+      acc[eventStartDate].push(todo);
+      return acc;
+    }, {} as Record<string, TodoItem[]>);
+
+    // Save completion status for each start date
+    Object.entries(todosByStartDate).forEach(([startDate, todosForDate]) => {
+      const storageKey = isShared 
+        ? `shared-completion-${startDate}`
+        : `${id}-personal-completion-${startDate}`;
+      
+      const completionStatus = todosForDate.reduce((acc, todo) => {
+        if (todo.isDone) {
+          acc[todo.id] = {
+            isDone: true,
+            completedAt: todo.completedAt,
+            completedBy: todo.completedBy
+          };
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
+      localStorage.setItem(storageKey, JSON.stringify(completionStatus));
+    });
   };
 
   const toggleTodoStatus = (todo: TodoItem, isShared: boolean) => {
