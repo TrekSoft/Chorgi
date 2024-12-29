@@ -271,18 +271,18 @@ const ChildPage: React.FC = () => {
               key={todo.id}
               onClick={() => !isOverdueChore(todo) ? toggleTodoStatus(todo, isShared) : undefined}
               sx={{
-                bgcolor: todo.backgroundColor || ((theme) => theme.palette.background.paper === '#121212' 
-                  ? 'rgba(255, 255, 255, 0.12)' 
-                  : 'rgba(0, 0, 0, 0.12)'),
+                bgcolor: todo.backgroundColor 
+                  ? (theme) => `color-mix(in srgb, ${todo.backgroundColor}, ${theme.palette.background.paper} 50%)`
+                  : ((theme) => theme.palette.background.paper === '#121212' 
+                    ? 'rgba(255, 255, 255, 0.12)' 
+                    : 'rgba(0, 0, 0, 0.12)'),
                 my: 1,
                 borderRadius: 1,
                 height: 72,
                 cursor: !isOverdueChore(todo) ? 'pointer' : 'default',
                 '&:hover': !isOverdueChore(todo) ? {
                   bgcolor: todo.backgroundColor 
-                    ? (theme) => theme.palette.mode === 'dark'
-                      ? `color-mix(in srgb, ${todo.backgroundColor}, black 10%)`
-                      : `color-mix(in srgb, ${todo.backgroundColor}, black 15%)`
+                    ? (theme) => `color-mix(in srgb, ${todo.backgroundColor}, ${theme.palette.background.paper} 40%)`
                     : (theme) => theme.palette.background.paper === '#121212'
                       ? 'rgba(255, 255, 255, 0.16)'
                       : 'rgba(0, 0, 0, 0.16)',
