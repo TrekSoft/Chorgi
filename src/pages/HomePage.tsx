@@ -259,7 +259,7 @@ const HomePage: React.FC = () => {
                   sx={{ width: 80, height: 80, mb: 1 }}
                 />
                 <Typography variant="h6" component="div">
-                  {child.name}
+                  {child.calendarId === process.env.REACT_APP_PARENT_EMAIL ? 'Mommy' : child.name}
                 </Typography>
                 {child.birthdate && (
                   <Typography variant="body2" color="text.secondary">
