@@ -158,8 +158,8 @@ const ChildPage: React.FC = () => {
           // Filter out completed todos from previous days
           .filter(todo => {
             if (!todo.isDone) return true;
-            if (!isCurrentlyPastDate) return true;
-            return false;
+            if (!todo.completedAt) return true;
+            return startOfDay(new Date(todo.completedAt)) >= startOfDay(selectedDate);
           });
         setPersonalTodos(filteredPersonalTodos);
       } else {
@@ -198,8 +198,8 @@ const ChildPage: React.FC = () => {
           // Filter out completed todos from previous days
           .filter(todo => {
             if (!todo.isDone) return true;
-            if (!isCurrentlyPastDate) return true;
-            return false;
+            if (!todo.completedAt) return true;
+            return startOfDay(new Date(todo.completedAt)) >= startOfDay(selectedDate);
           });
         setSharedTodos(filteredSharedTodos);
       } else {
