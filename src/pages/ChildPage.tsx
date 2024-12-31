@@ -37,7 +37,16 @@ const ChildPage: React.FC = () => {
   const isPastDate = (date: Date) => startOfDay(date).getTime() < startOfDay(new Date()).getTime();
   const isCurrentlyPastDate = isPastDate(selectedDate);
 
-  const isTodoDisabled = (todo: TodoItem) => isOverdueChore(todo) || isCurrentlyPastDate;
+  const isTodoDisabled = (todo: TodoItem) => {
+    if (isOverdueChore(todo) || isCurrentlyPastDate) return true;
+    
+    // For shared todos that are done, only allow the child who completed it to uncheck it
+    if (todo.isDone && todo.completedBy && todo.isShared) {
+      return todo.completedBy.id !== child?.googleId;
+    }
+
+    return false;
+  };
 
   // Update time every minute
   useEffect(() => {
