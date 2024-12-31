@@ -10,7 +10,7 @@ import {
   Paper,
   Typography,
   CircularProgress,
-  Avatar
+  Avatar,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -39,7 +39,7 @@ const ChildPage: React.FC = () => {
 
   const isTodoDisabled = (todo: TodoItem) => {
     if (isOverdueChore(todo) || isCurrentlyPastDate) return true;
-    
+
     // For shared todos that are done, only allow the child who completed it to uncheck it
     if (todo.isDone && todo.completedBy && todo.isShared) {
       return todo.completedBy.id !== child?.googleId;
@@ -74,7 +74,7 @@ const ChildPage: React.FC = () => {
     if (id) {
       const savedPersonalCalendars = localStorage.getItem(`${id}-personal-calendars`);
       const savedSharedCalendars = localStorage.getItem(`${id}-shared-calendars`);
-      
+
       if (savedPersonalCalendars) {
         setPersonalCalendars(JSON.parse(savedPersonalCalendars));
       }
@@ -87,7 +87,7 @@ const ChildPage: React.FC = () => {
   // Idle timer setup
   useEffect(() => {
     let currentTimer: NodeJS.Timeout;
-    
+
     const resetTimer = () => {
       if (currentTimer) clearTimeout(currentTimer);
       currentTimer = setTimeout(() => navigate('/'), 60000); // 1 minute
@@ -120,11 +120,9 @@ const ChildPage: React.FC = () => {
     try {
       const selectedEndOfDay = endOfDay(selectedDate);
       const selectedStartOfDay = startOfDay(selectedDate);
-      
+
       // For past dates, use end of day. For today, use current time
-      const referenceTime = isCurrentlyPastDate
-        ? selectedEndOfDay
-        : new Date();
+      const referenceTime = isCurrentlyPastDate ? selectedEndOfDay : new Date();
 
       // Fetch personal todos
       if (personalCalendars.length > 0) {
@@ -133,26 +131,33 @@ const ChildPage: React.FC = () => {
             getEventsFromCalendar(calendarId, selectedStartOfDay, selectedEndOfDay)
           )
         );
-        const filteredPersonalTodos = personalEvents.flat()
-          .filter(todo => 
-            todo.attendees?.some(attendee => attendee.email === child.calendarId) &&
-            (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
+        const filteredPersonalTodos = personalEvents
+          .flat()
+          .filter(
+            todo =>
+              todo.attendees?.some(attendee => attendee.email === child.calendarId) &&
+              (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
           )
           .map(todo => {
             const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
             const storageKey = `${id}-personal-completion-${eventStartDate}`;
             const savedStatus = localStorage.getItem(storageKey);
             const completionStatus = savedStatus ? JSON.parse(savedStatus) : {};
-            
+
             const completedAt = completionStatus[todo.id]?.completedAt;
-            const wasCompletedBySelectedDate = completedAt && new Date(completedAt) <= endOfDay(selectedDate);
+            const wasCompletedBySelectedDate =
+              completedAt && new Date(completedAt) <= endOfDay(selectedDate);
 
             return {
               ...todo,
               isDone: !!(wasCompletedBySelectedDate && completionStatus[todo.id]?.isDone),
-              completedAt: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedAt : undefined,
-              completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined,
-              isShared: false
+              completedAt: wasCompletedBySelectedDate
+                ? completionStatus[todo.id]?.completedAt
+                : undefined,
+              completedBy: wasCompletedBySelectedDate
+                ? completionStatus[todo.id]?.completedBy
+                : undefined,
+              isShared: false,
             };
           })
           // Filter out completed todos from previous days
@@ -173,26 +178,33 @@ const ChildPage: React.FC = () => {
             getEventsFromCalendar(calendarId, selectedStartOfDay, selectedEndOfDay)
           )
         );
-        const filteredSharedTodos = sharedEvents.flat()
-          .filter(todo => 
-            !todo.attendees?.length &&
-            (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
+        const filteredSharedTodos = sharedEvents
+          .flat()
+          .filter(
+            todo =>
+              !todo.attendees?.length &&
+              (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
           )
           .map(todo => {
             const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
             const storageKey = `shared-completion-${eventStartDate}`;
             const savedStatus = localStorage.getItem(storageKey);
             const completionStatus = savedStatus ? JSON.parse(savedStatus) : {};
-            
+
             const completedAt = completionStatus[todo.id]?.completedAt;
-            const wasCompletedBySelectedDate = completedAt && new Date(completedAt) <= endOfDay(selectedDate);
+            const wasCompletedBySelectedDate =
+              completedAt && new Date(completedAt) <= endOfDay(selectedDate);
 
             return {
               ...todo,
               isDone: !!(wasCompletedBySelectedDate && completionStatus[todo.id]?.isDone),
-              completedAt: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedAt : undefined,
-              completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined,
-              isShared: true
+              completedAt: wasCompletedBySelectedDate
+                ? completionStatus[todo.id]?.completedAt
+                : undefined,
+              completedBy: wasCompletedBySelectedDate
+                ? completionStatus[todo.id]?.completedBy
+                : undefined,
+              isShared: true,
             };
           })
           // Filter out completed todos from previous days
@@ -222,31 +234,37 @@ const ChildPage: React.FC = () => {
     if (!id) return;
 
     // Group todos by their start date
-    const todosByStartDate = todos.reduce((acc, todo) => {
-      const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
-      if (!acc[eventStartDate]) {
-        acc[eventStartDate] = [];
-      }
-      acc[eventStartDate].push(todo);
-      return acc;
-    }, {} as Record<string, TodoItem[]>);
+    const todosByStartDate = todos.reduce(
+      (acc, todo) => {
+        const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
+        if (!acc[eventStartDate]) {
+          acc[eventStartDate] = [];
+        }
+        acc[eventStartDate].push(todo);
+        return acc;
+      },
+      {} as Record<string, TodoItem[]>
+    );
 
     // Save completion status for each start date
     Object.entries(todosByStartDate).forEach(([startDate, todosForDate]) => {
-      const storageKey = isShared 
+      const storageKey = isShared
         ? `shared-completion-${startDate}`
         : `${id}-personal-completion-${startDate}`;
-      
-      const completionStatus = todosForDate.reduce((acc, todo) => {
-        if (todo.isDone) {
-          acc[todo.id] = {
-            isDone: true,
-            completedAt: todo.completedAt,
-            completedBy: todo.completedBy
-          };
-        }
-        return acc;
-      }, {} as Record<string, any>);
+
+      const completionStatus = todosForDate.reduce(
+        (acc, todo) => {
+          if (todo.isDone) {
+            acc[todo.id] = {
+              isDone: true,
+              completedAt: todo.completedAt,
+              completedBy: todo.completedBy,
+            };
+          }
+          return acc;
+        },
+        {} as Record<string, any>
+      );
 
       localStorage.setItem(storageKey, JSON.stringify(completionStatus));
     });
@@ -257,16 +275,18 @@ const ChildPage: React.FC = () => {
       ...todo,
       isDone: !todo.isDone,
       completedAt: !todo.isDone ? new Date().toISOString() : undefined,
-      completedBy: !todo.isDone ? {
-        id: child?.googleId || '',
-        name: child?.name || '',
-        avatarUrl: child?.avatarUrl || ''
-      } : undefined
+      completedBy: !todo.isDone
+        ? {
+            id: child?.googleId || '',
+            name: child?.name || '',
+            avatarUrl: child?.avatarUrl || '',
+          }
+        : undefined,
     };
 
     const updatedTodos = isShared
-      ? sharedTodos.map(t => t.id === todo.id ? updatedTodo : t)
-      : personalTodos.map(t => t.id === todo.id ? updatedTodo : t);
+      ? sharedTodos.map(t => (t.id === todo.id ? updatedTodo : t))
+      : personalTodos.map(t => (t.id === todo.id ? updatedTodo : t));
 
     if (isShared) {
       setSharedTodos(updatedTodos);
@@ -281,7 +301,7 @@ const ChildPage: React.FC = () => {
       confetti({
         particleCount: 100,
         spread: 70,
-        origin: { y: 0.6 }
+        origin: { y: 0.6 },
       });
     }
   };
@@ -292,21 +312,17 @@ const ChildPage: React.FC = () => {
 
   const sortTodos = (todos: TodoItem[], isShared: boolean) => {
     const now = new Date();
-    
+
     // Sort all todos by completion status and overdue status
-    const incomplete = todos.filter(
-      todo => !todo.isDone && isAfter(new Date(todo.endTime), now)
-    );
+    const incomplete = todos.filter(todo => !todo.isDone && isAfter(new Date(todo.endTime), now));
     const completed = todos
       .filter(todo => todo.isDone)
       .sort((a, b) => {
         const aTime = new Date(a.completedAt || a.endTime).getTime();
         const bTime = new Date(b.completedAt || b.endTime).getTime();
-        return bTime - aTime;  // Most recent first
+        return bTime - aTime; // Most recent first
       });
-    const overdue = todos.filter(
-      todo => !todo.isDone && !isAfter(new Date(todo.endTime), now)
-    );
+    const overdue = todos.filter(todo => !todo.isDone && !isAfter(new Date(todo.endTime), now));
 
     return [...incomplete, ...completed, ...overdue];
   };
@@ -330,47 +346,57 @@ const ChildPage: React.FC = () => {
     }
 
     return (
-      <List sx={{ 
-        maxHeight: 'calc(100vh - 300px)', // Remaining space after header
-        overflowY: 'auto',
-        pr: 1, // Add padding to the right
-        mr: -1, // Negative margin to compensate for padding
-        '&::-webkit-scrollbar': {
-          width: '8px',
-        },
-        '&::-webkit-scrollbar-track': {
-          background: 'transparent',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
-          borderRadius: '4px',
-        },
-        '&::-webkit-scrollbar-thumb:hover': {
-          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
-        }
-      }}>
-        {sortTodos(todos, isShared).map((todo) => {
+      <List
+        sx={{
+          maxHeight: 'calc(100vh - 300px)', // Remaining space after header
+          overflowY: 'auto',
+          pr: 1, // Add padding to the right
+          mr: -1, // Negative margin to compensate for padding
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: theme =>
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: theme =>
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+          },
+        }}
+      >
+        {sortTodos(todos, isShared).map(todo => {
           return (
             <ListItem
               key={todo.id}
-              onClick={() => !isTodoDisabled(todo) ? toggleTodoStatus(todo, isShared) : undefined}
+              onClick={() => (!isTodoDisabled(todo) ? toggleTodoStatus(todo, isShared) : undefined)}
               sx={{
-                bgcolor: todo.backgroundColor 
-                  ? (theme) => `color-mix(in srgb, ${todo.backgroundColor}, ${theme.palette.background.paper} 50%)`
-                  : ((theme) => theme.palette.background.paper === '#121212' 
-                    ? 'rgba(255, 255, 255, 0.12)' 
-                    : 'rgba(0, 0, 0, 0.12)'),
+                bgcolor: todo.backgroundColor
+                  ? theme =>
+                      `color-mix(in srgb, ${todo.backgroundColor}, ${theme.palette.background.paper} 50%)`
+                  : theme =>
+                      theme.palette.background.paper === '#121212'
+                        ? 'rgba(255, 255, 255, 0.12)'
+                        : 'rgba(0, 0, 0, 0.12)',
                 my: 1,
                 borderRadius: 1,
                 height: 72,
                 cursor: !isTodoDisabled(todo) ? 'pointer' : 'default',
-                '&:hover': !isTodoDisabled(todo) ? {
-                  bgcolor: todo.backgroundColor 
-                    ? (theme) => `color-mix(in srgb, ${todo.backgroundColor}, ${theme.palette.background.paper} 40%)`
-                    : (theme) => theme.palette.background.paper === '#121212'
-                      ? 'rgba(255, 255, 255, 0.16)'
-                      : 'rgba(0, 0, 0, 0.16)',
-                } : {},
+                '&:hover': !isTodoDisabled(todo)
+                  ? {
+                      bgcolor: todo.backgroundColor
+                        ? theme =>
+                            `color-mix(in srgb, ${todo.backgroundColor}, ${theme.palette.background.paper} 40%)`
+                        : theme =>
+                            theme.palette.background.paper === '#121212'
+                              ? 'rgba(255, 255, 255, 0.16)'
+                              : 'rgba(0, 0, 0, 0.16)',
+                    }
+                  : {},
               }}
             >
               <Box
@@ -378,10 +404,10 @@ const ChildPage: React.FC = () => {
                   width: 24,
                   height: 24,
                   border: 2,
-                  borderColor: todo.isDone 
-                    ? 'primary.main' 
+                  borderColor: todo.isDone
+                    ? 'primary.main'
                     : isOverdueChore(todo)
-                      ? 'error.main' 
+                      ? 'error.main'
                       : 'text.primary',
                   borderRadius: '50%',
                   mr: 2,
@@ -405,50 +431,46 @@ const ChildPage: React.FC = () => {
               <ListItemText
                 primary={todo.title}
                 secondary={
-                  isShared && todo.completedBy 
-                    ? `Completed by ${todo.completedBy.name}` 
-                    :  isOverdueChore(todo)
-                        ? "Chore not completed on time"
-                        : todo.endTime.includes('T') 
-                          ? (() => {
-                              const endDate = new Date(todo.endTime);
-                              return endDate.toDateString() === selectedDate.toDateString()
-                                ? `Complete by ${format(endDate, 'h:mm a')}`
-                                : `Complete by ${format(endDate, 'MMM d')} at ${format(endDate, 'h:mm a')}`;
-                            })()
-                          : (() => {
-                              const endDate = new Date(todo.endTime);
-                              return endDate.toDateString() === selectedDate.toDateString()
-                                ? 'Complete by end of day'
-                                : `Complete by end of ${format(endDate, 'MMM d')}`;
-                            })()
+                  isShared && todo.completedBy
+                    ? `Completed by ${todo.completedBy.name}`
+                    : isOverdueChore(todo)
+                      ? 'Chore not completed on time'
+                      : todo.endTime.includes('T')
+                        ? (() => {
+                            const endDate = new Date(todo.endTime);
+                            return endDate.toDateString() === selectedDate.toDateString()
+                              ? `Complete by ${format(endDate, 'h:mm a')}`
+                              : `Complete by ${format(endDate, 'MMM d')} at ${format(endDate, 'h:mm a')}`;
+                          })()
+                        : (() => {
+                            const endDate = new Date(todo.endTime);
+                            return endDate.toDateString() === selectedDate.toDateString()
+                              ? 'Complete by end of day'
+                              : `Complete by end of ${format(endDate, 'MMM d')}`;
+                          })()
                 }
                 sx={{
                   '.MuiListItemText-primary': {
-                    textDecoration: todo.isDone 
-                      ? 'line-through' 
+                    textDecoration: todo.isDone
+                      ? 'line-through'
                       : isOverdueChore(todo)
-                        ? 'line-through' 
+                        ? 'line-through'
                         : 'none',
-                    color: isOverdueChore(todo)
-                      ? 'error.main'
-                      : 'text.primary',
+                    color: isOverdueChore(todo) ? 'error.main' : 'text.primary',
                   },
                   '.MuiListItemText-secondary': {
-                    color: isOverdueChore(todo)
-                      ? 'error.main'
-                      : 'text.secondary',
-                  }
+                    color: isOverdueChore(todo) ? 'error.main' : 'text.secondary',
+                  },
                 }}
               />
               {isShared && todo.completedBy && (
                 <Avatar
                   src={todo.completedBy.avatarUrl}
                   alt={todo.completedBy.name}
-                  sx={{ 
-                    width: 32, 
+                  sx={{
+                    width: 32,
                     height: 32,
-                    ml: 2
+                    ml: 2,
                   }}
                 />
               )}
@@ -479,31 +501,37 @@ const ChildPage: React.FC = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Box sx={{ 
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bgcolor: 'background.default',
-        zIndex: 90,
-        py: 2,
-        px: 3
-      }}>
-        <Box sx={{ 
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bgcolor: 'background.default',
+          zIndex: 90,
+          py: 2,
+          px: 3,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <IconButton
             onClick={() => navigate('/')}
             sx={{
-              bgcolor: (theme) => theme.palette.background.paper === '#121212'
-                ? 'rgba(255, 255, 255, 0.12)'
-                : 'rgba(100, 100, 100, .85)',
+              bgcolor: theme =>
+                theme.palette.background.paper === '#121212'
+                  ? 'rgba(255, 255, 255, 0.12)'
+                  : 'rgba(100, 100, 100, .85)',
               '&:hover': {
-                bgcolor: (theme) => theme.palette.background.paper === '#121212'
-                  ? 'rgba(255, 255, 255, 0.16)'
-                  : 'rgba(100, 100, 100, .5)',
+                bgcolor: theme =>
+                  theme.palette.background.paper === '#121212'
+                    ? 'rgba(255, 255, 255, 0.16)'
+                    : 'rgba(100, 100, 100, .5)',
               },
               padding: 2,
             }}
@@ -513,20 +541,24 @@ const ChildPage: React.FC = () => {
 
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-              <IconButton 
-                onClick={() => setSelectedDate(date => {
-                  const newDate = new Date(date);
-                  newDate.setDate(date.getDate() - 1);
-                  return newDate;
-                })}
+              <IconButton
+                onClick={() =>
+                  setSelectedDate(date => {
+                    const newDate = new Date(date);
+                    newDate.setDate(date.getDate() - 1);
+                    return newDate;
+                  })
+                }
                 sx={{
-                  bgcolor: (theme) => theme.palette.background.paper === '#121212'
-                    ? 'rgba(255, 255, 255, 0.12)'
-                    : 'rgba(100, 100, 100, .85)',
+                  bgcolor: theme =>
+                    theme.palette.background.paper === '#121212'
+                      ? 'rgba(255, 255, 255, 0.12)'
+                      : 'rgba(100, 100, 100, .85)',
                   '&:hover': {
-                    bgcolor: (theme) => theme.palette.background.paper === '#121212'
-                      ? 'rgba(255, 255, 255, 0.16)'
-                      : 'rgba(100, 100, 100, .5)',
+                    bgcolor: theme =>
+                      theme.palette.background.paper === '#121212'
+                        ? 'rgba(255, 255, 255, 0.16)'
+                        : 'rgba(100, 100, 100, .5)',
                   },
                 }}
               >
@@ -536,22 +568,26 @@ const ChildPage: React.FC = () => {
                 {format(selectedDate, 'MMMM d, yyyy')}
               </Typography>
               {isPastDate(selectedDate) && (
-                <IconButton 
-                  onClick={() => setSelectedDate(date => {
-                    const newDate = new Date(date);
-                    newDate.setDate(date.getDate() + 1);
-                    return startOfDay(newDate).getTime() <= startOfDay(new Date()).getTime() 
-                      ? newDate 
-                      : new Date();
-                  })}
+                <IconButton
+                  onClick={() =>
+                    setSelectedDate(date => {
+                      const newDate = new Date(date);
+                      newDate.setDate(date.getDate() + 1);
+                      return startOfDay(newDate).getTime() <= startOfDay(new Date()).getTime()
+                        ? newDate
+                        : new Date();
+                    })
+                  }
                   sx={{
-                    bgcolor: (theme) => theme.palette.background.paper === '#121212'
-                      ? 'rgba(255, 255, 255, 0.12)'
-                      : 'rgba(100, 100, 100, .85)',
+                    bgcolor: theme =>
+                      theme.palette.background.paper === '#121212'
+                        ? 'rgba(255, 255, 255, 0.12)'
+                        : 'rgba(100, 100, 100, .85)',
                     '&:hover': {
-                      bgcolor: (theme) => theme.palette.background.paper === '#121212'
-                        ? 'rgba(255, 255, 255, 0.16)'
-                        : 'rgba(100, 100, 100, .5)',
+                      bgcolor: theme =>
+                        theme.palette.background.paper === '#121212'
+                          ? 'rgba(255, 255, 255, 0.16)'
+                          : 'rgba(100, 100, 100, .5)',
                     },
                   }}
                 >
@@ -560,17 +596,17 @@ const ChildPage: React.FC = () => {
               )}
             </Box>
             {child && (
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   gap: 2,
-                  mt: 1 
+                  mt: 1,
                 }}
               >
-                <Avatar 
-                  src={child.avatarUrl} 
+                <Avatar
+                  src={child.avatarUrl}
                   alt={`${child.name}'s avatar`}
                   sx={{ width: 32, height: 32 }}
                 />
@@ -591,7 +627,14 @@ const ChildPage: React.FC = () => {
         <Grid container spacing={2}>
           <Grid item xs={6}>
             <Paper sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
                 <Typography variant="h6">Your Chores</Typography>
                 <CalendarSettings
                   selectedCalendars={personalCalendars}
@@ -605,7 +648,14 @@ const ChildPage: React.FC = () => {
 
           <Grid item xs={6}>
             <Paper sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
                 <Typography variant="h6">Shared Chores</Typography>
                 <CalendarSettings
                   selectedCalendars={sharedCalendars}

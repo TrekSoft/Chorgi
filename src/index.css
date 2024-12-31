@@ -1,27 +1,25 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
 :root {
-  --calendar-blue: #7986CB;
-  --calendar-green: #33B679;
-  --calendar-purple: #8E24AA;
-  --calendar-red: #E67C73;
-  --calendar-yellow: #F6BF26;
-  --calendar-orange: #F4511E;
-  --calendar-turquoise: #039BE5;
+  --calendar-blue: #7986cb;
+  --calendar-green: #33b679;
+  --calendar-purple: #8e24aa;
+  --calendar-red: #e67c73;
+  --calendar-yellow: #f6bf26;
+  --calendar-orange: #f4511e;
+  --calendar-turquoise: #039be5;
   --calendar-gray: #616161;
-  --calendar-bold-blue: #3F51B5;
-  --calendar-bold-green: #0B8043;
-  --calendar-bold-red: #D50000;
+  --calendar-bold-blue: #3f51b5;
+  --calendar-bold-green: #0b8043;
+  --calendar-bold-red: #d50000;
 }

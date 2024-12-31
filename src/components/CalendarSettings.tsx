@@ -9,7 +9,11 @@ import {
   Checkbox,
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { listCalendars, initializeGoogleCalendar, setStoredToken } from '../services/googleCalendar';
+import {
+  listCalendars,
+  initializeGoogleCalendar,
+  setStoredToken,
+} from '../services/googleCalendar';
 
 interface CalendarSettingsProps {
   selectedCalendars: string[];
@@ -80,7 +84,7 @@ const CalendarSettings: React.FC<CalendarSettingsProps> = ({
       >
         <List sx={{ width: 300 }}>
           {calendars.length > 0 ? (
-            calendars.map((calendar) => (
+            calendars.map(calendar => (
               <ListItemButton
                 key={calendar.id}
                 onClick={() => calendar.id && handleToggleCalendar(calendar.id)}

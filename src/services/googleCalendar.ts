@@ -23,7 +23,7 @@ let gisInited = false;
 let tokenClient: google.accounts.oauth2.TokenClient;
 
 export const initializeGoogleCalendar = async () => {
-  await new Promise<void>((resolve) => {
+  await new Promise<void>(resolve => {
     gapi.load('client', async () => {
       await gapi.client.init({
         apiKey: process.env.REACT_APP_GOOGLE_API_KEY,
@@ -37,7 +37,7 @@ export const initializeGoogleCalendar = async () => {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID!,
     scope: SCOPES.join(' '),
-    callback: (tokenResponse) => {
+    callback: tokenResponse => {
       // Handle the token response here
       gapi.client.setToken(tokenResponse);
     },
@@ -77,14 +77,14 @@ export const getEventsFromCalendar = async (
       timeMax: extendedTimeMax.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
-      fields: 'items(id,summary,start,end,attendees,colorId)'
+      fields: 'items(id,summary,start,end,attendees,colorId)',
     } as gapi.client.calendar.EventsListParameters);
 
     return (response.result.items || [])
       .filter(event => {
         const eventStart = new Date(event.start?.dateTime || event.start?.date || '');
         const eventEnd = new Date(event.end?.dateTime || event.end?.date || '');
-        
+
         // Include events that:
         // 1. Start during the day
         // 2. End during the day
@@ -105,8 +105,8 @@ export const getEventsFromCalendar = async (
         backgroundColor: event.colorId ? COLOR_MAP[event.colorId] : undefined,
         attendees: event.attendees?.map(attendee => ({
           email: attendee.email || '',
-          responseStatus: attendee.responseStatus
-        }))
+          responseStatus: attendee.responseStatus,
+        })),
       }));
   } catch (error) {
     console.error('Error fetching events:', error);

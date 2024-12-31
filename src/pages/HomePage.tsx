@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  Grid,
-  Typography,
-  Card,
-  CardActionArea,
-  Avatar,
-  Link,
-} from '@mui/material';
+import { Box, Button, Grid, Typography, Card, CardActionArea, Avatar, Link } from '@mui/material';
 import { useGoogleLogin } from '@react-oauth/google';
 import { Child } from '../types';
 import { differenceInDays, parse, addYears, isAfter } from 'date-fns';
@@ -29,27 +20,31 @@ const HomePage: React.FC = () => {
 
   const getDaysUntilBirthday = (birthdate?: string) => {
     if (!birthdate) return null;
-    
+
     const today = new Date();
     const birthdateObj = parse(birthdate, 'yyyy-MM-dd', new Date());
-    let nextBirthday = new Date(today.getFullYear(), birthdateObj.getMonth(), birthdateObj.getDate());
-    
+    let nextBirthday = new Date(
+      today.getFullYear(),
+      birthdateObj.getMonth(),
+      birthdateObj.getDate()
+    );
+
     if (isAfter(today, nextBirthday)) {
       nextBirthday = addYears(nextBirthday, 1);
     }
-    
+
     return differenceInDays(nextBirthday, today) + 1;
   };
 
   const getBirthdayText = (birthdate?: string) => {
     if (!birthdate) return null;
     const daysUntil = getDaysUntilBirthday(birthdate);
-    return daysUntil === 365 ? "Happy Birthday!! 🎉" : `${daysUntil} days until birthday`;
+    return daysUntil === 365 ? 'Happy Birthday!! 🎉' : `${daysUntil} days until birthday`;
   };
 
   const login = useGoogleLogin({
     flow: 'auth-code',
-    onSuccess: async (codeResponse) => {
+    onSuccess: async codeResponse => {
       setIsLoading(true);
       setError(null);
       try {
@@ -73,21 +68,18 @@ const HomePage: React.FC = () => {
         }
 
         const tokens = await tokensResponse.json();
-        
+
         // Get user info with access token
-        const userInfoResponse = await fetch(
-          'https://www.googleapis.com/oauth2/v3/userinfo',
-          {
-            headers: {
-              Authorization: `Bearer ${tokens.access_token}`,
-            },
-          }
-        );
-        
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokens.access_token}`,
+          },
+        });
+
         if (!userInfoResponse.ok) {
           throw new Error('Failed to fetch user info');
         }
-        
+
         const userInfo = await userInfoResponse.json();
 
         // Get birthdate from Google People API
@@ -108,7 +100,7 @@ const HomePage: React.FC = () => {
             birthdate = `${birthday.year || '2000'}-${String(birthday.month).padStart(2, '0')}-${String(birthday.day).padStart(2, '0')}`;
           }
         }
-        
+
         const newChild: Child = {
           id: crypto.randomUUID(),
           name: userInfo.name,
@@ -120,7 +112,7 @@ const HomePage: React.FC = () => {
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,
             token_type: 'Bearer',
-            expiry_date: Date.now() + (tokens.expires_in * 1000),
+            expiry_date: Date.now() + tokens.expires_in * 1000,
           },
         };
 
@@ -134,11 +126,12 @@ const HomePage: React.FC = () => {
         setIsLoading(false);
       }
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Google OAuth Error:', error);
       setError('Failed to connect Google account. Please try again.');
     },
-    scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/user.birthday.read profile email',
+    scope:
+      'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/user.birthday.read profile email',
   });
 
   const refreshAccessToken = async (child: Child): Promise<boolean> => {
@@ -161,23 +154,21 @@ const HomePage: React.FC = () => {
       }
 
       const tokens = await response.json();
-      
+
       // Update the child's token in state and localStorage
       const updatedChild = {
         ...child,
         googleToken: {
           ...child.googleToken,
           access_token: tokens.access_token,
-          expiry_date: Date.now() + (tokens.expires_in * 1000),
+          expiry_date: Date.now() + tokens.expires_in * 1000,
         },
       };
 
-      const updatedChildren = children.map(c => 
-        c.id === child.id ? updatedChild : c
-      );
+      const updatedChildren = children.map(c => (c.id === child.id ? updatedChild : c));
       setChildren(updatedChildren);
       localStorage.setItem('children', JSON.stringify(updatedChildren));
-      
+
       return true;
     } catch (error) {
       console.error('Error refreshing token:', error);
@@ -188,7 +179,7 @@ const HomePage: React.FC = () => {
   const handleChildClick = async (child: Child) => {
     // Check if token is expired (with 5 minute buffer)
     const isExpired = true;
-    
+
     if (isExpired) {
       const success = await refreshAccessToken(child);
       if (!success) {
@@ -200,7 +191,7 @@ const HomePage: React.FC = () => {
         return;
       }
     }
-    
+
     navigate(`/child/${child.id}`);
   };
 
@@ -226,11 +217,7 @@ const HomePage: React.FC = () => {
         }}
       />
 
-      <Typography
-        variant="h2"
-        component="h1"
-        sx={{ color: 'primary.main', mb: 4 }}
-      >
+      <Typography variant="h2" component="h1" sx={{ color: 'primary.main', mb: 4 }}>
         Chorgi
       </Typography>
 
@@ -241,7 +228,7 @@ const HomePage: React.FC = () => {
       )}
 
       <Grid container spacing={3} sx={{ maxWidth: 1200, mx: 'auto' }}>
-        {children.map((child) => (
+        {children.map(child => (
           <Grid item xs={12} sm={6} md={4} key={child.id}>
             <Card>
               <CardActionArea
