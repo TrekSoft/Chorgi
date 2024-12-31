@@ -302,7 +302,7 @@ const ChildPage: React.FC = () => {
       confetti({
         angle: randomInRange(55, 125),
         spread: randomInRange(50, 70),
-        particleCount: randomInRange(50, 100),
+        particleCount: randomInRange(75, 125),
         origin: { y: 0.6 },
         startVelocity: randomInRange(35, 65),
         drift: randomInRange(-0.4, 0.4),
