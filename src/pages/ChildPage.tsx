@@ -124,10 +124,27 @@ const ChildPage: React.FC = () => {
             getEventsFromCalendar(calendarId, selectedStartOfDay, selectedEndOfDay)
           )
         );
-        const filteredPersonalTodos = personalEvents.flat().filter(todo => 
-          todo.attendees?.some(attendee => attendee.email === child.calendarId) &&
-          (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
-        );
+        const filteredPersonalTodos = personalEvents.flat()
+          .filter(todo => 
+            todo.attendees?.some(attendee => attendee.email === child.calendarId) &&
+            (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
+          )
+          .map(todo => {
+            const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
+            const storageKey = `${id}-personal-completion-${eventStartDate}`;
+            const savedStatus = localStorage.getItem(storageKey);
+            const completionStatus = savedStatus ? JSON.parse(savedStatus) : {};
+            
+            const completedAt = completionStatus[todo.id]?.completedAt;
+            const wasCompletedBySelectedDate = completedAt && new Date(completedAt) <= endOfDay(selectedDate);
+
+            return {
+              ...todo,
+              isDone: !!(wasCompletedBySelectedDate && completionStatus[todo.id]?.isDone),
+              completedAt: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedAt : undefined,
+              completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined
+            };
+          });
         setPersonalTodos(filteredPersonalTodos);
       } else {
         setPersonalTodos([]);
@@ -140,10 +157,27 @@ const ChildPage: React.FC = () => {
             getEventsFromCalendar(calendarId, selectedStartOfDay, selectedEndOfDay)
           )
         );
-        const filteredSharedTodos = sharedEvents.flat().filter(todo => 
-          !todo.attendees?.length &&
-          (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
-        );
+        const filteredSharedTodos = sharedEvents.flat()
+          .filter(todo => 
+            !todo.attendees?.length &&
+            (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
+          )
+          .map(todo => {
+            const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
+            const storageKey = `shared-completion-${eventStartDate}`;
+            const savedStatus = localStorage.getItem(storageKey);
+            const completionStatus = savedStatus ? JSON.parse(savedStatus) : {};
+            
+            const completedAt = completionStatus[todo.id]?.completedAt;
+            const wasCompletedBySelectedDate = completedAt && new Date(completedAt) <= endOfDay(selectedDate);
+
+            return {
+              ...todo,
+              isDone: !!(wasCompletedBySelectedDate && completionStatus[todo.id]?.isDone),
+              completedAt: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedAt : undefined,
+              completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined
+            };
+          });
         setSharedTodos(filteredSharedTodos);
       } else {
         setSharedTodos([]);
@@ -157,43 +191,9 @@ const ChildPage: React.FC = () => {
 
   // Refetch todos when selectedDate changes
   useEffect(() => {
-    fetchTodos();
+    setIsLoadingTodos(true);
+    setTimeout(() => fetchTodos(), 500); // Wait for Google Calendar to initialize
   }, [selectedDate, personalCalendars, sharedCalendars, child, isCalendarInitialized]);
-
-  const loadCompletionStatus = (todos: TodoItem[], isShared: boolean) => {
-    if (!id) return todos;
-    
-    return todos.map(todo => {
-      const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
-      const storageKey = isShared 
-        ? `shared-completion-${eventStartDate}`
-        : `${id}-personal-completion-${eventStartDate}`;
-      const savedStatus = localStorage.getItem(storageKey);
-      
-      if (!savedStatus) return todo;
-      
-      const completionStatus: Record<string, { 
-        isDone: boolean; 
-        completedAt?: string;
-        completedBy?: {
-          id: string;
-          name: string;
-          avatarUrl: string;
-        };
-      }> = JSON.parse(savedStatus);
-
-      // Only show completion if it happened before or on the selected date
-      const completedAt = completionStatus[todo.id]?.completedAt;
-      const wasCompletedBySelectedDate = completedAt && new Date(completedAt) <= endOfDay(selectedDate);
-      
-      return {
-        ...todo,
-        isDone: wasCompletedBySelectedDate ? completionStatus[todo.id]?.isDone ?? false : false,
-        completedAt: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedAt : undefined,
-        completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined
-      };
-    });
-  };
 
   const saveCompletionStatus = (todos: TodoItem[], isShared: boolean) => {
     if (!id) return;
@@ -308,7 +308,7 @@ const ChildPage: React.FC = () => {
 
     return (
       <List>
-        {sortTodos(loadCompletionStatus(todos, isShared), isShared).map((todo) => {
+        {sortTodos(todos, isShared).map((todo) => {
           return (
             <ListItem
               key={todo.id}
@@ -531,7 +531,7 @@ const ChildPage: React.FC = () => {
                 <Avatar 
                   src={child.avatarUrl} 
                   alt={`${child.name}'s avatar`}
-                  sx={{ width: 48, height: 48 }}
+                  sx={{ width: 32, height: 32 }}
                 />
                 <Typography variant="h5" color="textSecondary">
                   {child.name}
