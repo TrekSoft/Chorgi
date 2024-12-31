@@ -20,6 +20,7 @@ import { isAfter, startOfDay, endOfDay, format } from 'date-fns';
 import { getEventsFromCalendar, initializeGoogleCalendar } from '../services/googleCalendar';
 import CalendarSettings from '../components/CalendarSettings';
 import confetti from 'canvas-confetti';
+import { randomInRange } from '../utils';
 
 const ChildPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -299,9 +300,12 @@ const ChildPage: React.FC = () => {
     // Fire confetti when marking as done
     if (!todo.isDone) {
       confetti({
-        particleCount: 100,
-        spread: 70,
+        angle: randomInRange(55, 125),
+        spread: randomInRange(50, 70),
+        particleCount: randomInRange(50, 100),
         origin: { y: 0.6 },
+        startVelocity: randomInRange(35, 65),
+        drift: randomInRange(-0.4, 0.4),
       });
     }
   };
