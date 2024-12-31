@@ -19,6 +19,7 @@ import { Child, TodoItem } from '../types';
 import { isAfter, startOfDay, endOfDay, format } from 'date-fns';
 import { getEventsFromCalendar, initializeGoogleCalendar } from '../services/googleCalendar';
 import CalendarSettings from '../components/CalendarSettings';
+import confetti from 'canvas-confetti';
 
 const ChildPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -229,31 +230,36 @@ const ChildPage: React.FC = () => {
   };
 
   const toggleTodoStatus = (todo: TodoItem, isShared: boolean) => {
-    const updateTodos = (todos: TodoItem[]) => {
-      const updatedTodos = todos.map(t => {
-        if (t.id === todo.id) {
-          const newIsDone = !t.isDone;
-          return { 
-            ...t, 
-            isDone: newIsDone,
-            completedAt: newIsDone ? new Date().toISOString() : undefined,
-            completedBy: newIsDone && child ? {
-              id: child.id,
-              name: child.name,
-              avatarUrl: child.avatarUrl
-            } : undefined
-          };
-        }
-        return t;
-      });
-      saveCompletionStatus(updatedTodos, isShared);
-      return updatedTodos;
+    const updatedTodo = {
+      ...todo,
+      isDone: !todo.isDone,
+      completedAt: !todo.isDone ? new Date().toISOString() : undefined,
+      completedBy: !todo.isDone ? {
+        id: child?.googleId || '',
+        name: child?.name || '',
+        avatarUrl: child?.avatarUrl || ''
+      } : undefined
     };
 
+    const updatedTodos = isShared
+      ? sharedTodos.map(t => t.id === todo.id ? updatedTodo : t)
+      : personalTodos.map(t => t.id === todo.id ? updatedTodo : t);
+
     if (isShared) {
-      setSharedTodos(updateTodos(sharedTodos));
+      setSharedTodos(updatedTodos);
     } else {
-      setPersonalTodos(updateTodos(personalTodos));
+      setPersonalTodos(updatedTodos);
+    }
+
+    saveCompletionStatus(updatedTodos, isShared);
+
+    // Fire confetti when marking as done
+    if (!todo.isDone) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
     }
   };
 
@@ -438,7 +444,7 @@ const ChildPage: React.FC = () => {
         left: 0,
         right: 0,
         bgcolor: 'background.default',
-        zIndex: 1000,
+        zIndex: 90,
         py: 2,
         px: 3
       }}>
