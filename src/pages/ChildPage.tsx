@@ -316,7 +316,25 @@ const ChildPage: React.FC = () => {
     }
 
     return (
-      <List>
+      <List sx={{ 
+        maxHeight: 'calc(100vh - 300px)', // Remaining space after header
+        overflowY: 'auto',
+        pr: 1, // Add padding to the right
+        mr: -1, // Negative margin to compensate for padding
+        '&::-webkit-scrollbar': {
+          width: '8px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: 'transparent',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+          borderRadius: '4px',
+        },
+        '&::-webkit-scrollbar-thumb:hover': {
+          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+        }
+      }}>
         {sortTodos(todos, isShared).map((todo) => {
           return (
             <ListItem
