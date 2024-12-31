@@ -13,6 +13,8 @@ import {
   Avatar
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { Child, TodoItem } from '../types';
 import { isAfter, startOfDay, endOfDay, format } from 'date-fns';
 import { getEventsFromCalendar, initializeGoogleCalendar } from '../services/googleCalendar';
@@ -29,6 +31,8 @@ const ChildPage: React.FC = () => {
   const [isCalendarInitialized, setIsCalendarInitialized] = useState(false);
   const [isLoadingTodos, setIsLoadingTodos] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const isBeforeToday = startOfDay(selectedDate).getTime() < startOfDay(new Date()).getTime();
 
   // Update time every minute
   useEffect(() => {
@@ -95,52 +99,61 @@ const ChildPage: React.FC = () => {
   }, []);
 
   // Load todos from Google Calendar
-  useEffect(() => {
-    const fetchTodos = async () => {
-      if (!child?.googleToken) return;
-
-      try {
-        const now = new Date();
-        const start = startOfDay(now);
-        const end = endOfDay(now);
-
-        if (personalCalendars.length > 0) {
-          // Fetch personal todos
-          const personalEvents = await Promise.all(
-            personalCalendars.map(calendarId =>
-              getEventsFromCalendar(calendarId, start, end)
-            )
-          );
-          const filteredPersonalTodos = personalEvents.flat().filter(todo => 
-            (!todo.startTime || isAfter(currentTime, new Date(todo.startTime))) &&
-            (todo.attendees?.some(attendee => attendee.email === child?.calendarId))
-          );
-          setPersonalTodos(loadCompletionStatus(filteredPersonalTodos, false));
-        }
-
-        if (sharedCalendars.length > 0) {
-          // Fetch shared todos
-          const sharedEvents = await Promise.all(
-            sharedCalendars.map(calendarId =>
-              getEventsFromCalendar(calendarId, start, end)
-            )
-          );
-          const filteredSharedTodos = sharedEvents.flat().filter(todo => 
-            !todo.startTime || isAfter(currentTime, new Date(todo.startTime))
-          );
-          const filteredEvents = filteredSharedTodos.filter(event => event.isShared);
-          setSharedTodos(loadCompletionStatus(filteredEvents, true));
-        }
-      } catch (error) {
-        console.error('Error fetching todos:', error);
-      } finally {
-        setIsLoadingTodos(false);
-      }
-    };
+  const fetchTodos = async () => {
+    if (!child || !isCalendarInitialized) return;
 
     setIsLoadingTodos(true);
-    setTimeout(fetchTodos, 500); // Wait for Google API to initialize before fetchTodos();
-  }, [child?.googleToken, personalCalendars, sharedCalendars, isCalendarInitialized, currentTime]);
+    try {
+      const selectedEndOfDay = endOfDay(selectedDate);
+      const selectedStartOfDay = startOfDay(selectedDate);
+      
+      // For past dates, use end of day. For today, use current time
+      const referenceTime = startOfDay(selectedDate).getTime() < startOfDay(new Date()).getTime()
+        ? selectedEndOfDay
+        : new Date();
+
+      // Fetch personal todos
+      if (personalCalendars.length > 0) {
+        const personalEvents = await Promise.all(
+          personalCalendars.map(calendarId =>
+            getEventsFromCalendar(calendarId, selectedStartOfDay, selectedEndOfDay)
+          )
+        );
+        const filteredPersonalTodos = personalEvents.flat().filter(todo => 
+          todo.attendees?.some(attendee => attendee.email === child.calendarId) &&
+          (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
+        );
+        setPersonalTodos(filteredPersonalTodos);
+      } else {
+        setPersonalTodos([]);
+      }
+
+      // Fetch shared todos
+      if (sharedCalendars.length > 0) {
+        const sharedEvents = await Promise.all(
+          sharedCalendars.map(calendarId =>
+            getEventsFromCalendar(calendarId, selectedStartOfDay, selectedEndOfDay)
+          )
+        );
+        const filteredSharedTodos = sharedEvents.flat().filter(todo => 
+          !todo.attendees?.length &&
+          (!todo.startTime || isAfter(referenceTime, new Date(todo.startTime)))
+        );
+        setSharedTodos(filteredSharedTodos);
+      } else {
+        setSharedTodos([]);
+      }
+    } catch (error) {
+      console.error('Error fetching todos:', error);
+    } finally {
+      setIsLoadingTodos(false);
+    }
+  };
+
+  // Refetch todos when selectedDate changes
+  useEffect(() => {
+    fetchTodos();
+  }, [selectedDate, personalCalendars, sharedCalendars, child, isCalendarInitialized]);
 
   const loadCompletionStatus = (todos: TodoItem[], isShared: boolean) => {
     if (!id) return todos;
@@ -163,12 +176,16 @@ const ChildPage: React.FC = () => {
           avatarUrl: string;
         };
       }> = JSON.parse(savedStatus);
+
+      // Only show completion if it happened before or on the selected date
+      const completedAt = completionStatus[todo.id]?.completedAt;
+      const wasCompletedBySelectedDate = completedAt && new Date(completedAt) <= endOfDay(selectedDate);
       
       return {
         ...todo,
-        isDone: completionStatus[todo.id]?.isDone ?? false,
-        completedAt: completionStatus[todo.id]?.completedAt,
-        completedBy: completionStatus[todo.id]?.completedBy
+        isDone: wasCompletedBySelectedDate ? completionStatus[todo.id]?.isDone ?? false : false,
+        completedAt: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedAt : undefined,
+        completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined
       };
     });
   };
@@ -281,7 +298,7 @@ const ChildPage: React.FC = () => {
 
     return (
       <List>
-        {sortTodos(todos, isShared).map((todo) => {
+        {sortTodos(loadCompletionStatus(todos, isShared), isShared).map((todo) => {
           return (
             <ListItem
               key={todo.id}
@@ -412,101 +429,146 @@ const ChildPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3, py: 14 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Box sx={{ 
         position: 'fixed',
-        top: 20,
+        top: 0,
         left: 0,
         right: 0,
-        height: 80,
         bgcolor: 'background.default',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        px: 3,
-        zIndex: 1000
+        zIndex: 1000,
+        py: 2,
+        px: 3
       }}>
-        <IconButton
-          onClick={() => navigate('/')}
-          sx={{
-            bgcolor: (theme) => theme.palette.background.paper === '#121212'
-              ? 'rgba(255, 255, 255, 0.12)'
-              : 'rgba(100, 100, 100, .85)',
-            '&:hover': {
+        <Box sx={{ 
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <IconButton
+            onClick={() => navigate('/')}
+            sx={{
               bgcolor: (theme) => theme.palette.background.paper === '#121212'
-                ? 'rgba(255, 255, 255, 0.16)'
-                : 'rgba(100, 100, 100, .5)',
-            },
-            padding: 2,
-          }}
-        >
-          <HomeIcon sx={{ fontSize: 48 }} />
-        </IconButton>
+                ? 'rgba(255, 255, 255, 0.12)'
+                : 'rgba(100, 100, 100, .85)',
+              '&:hover': {
+                bgcolor: (theme) => theme.palette.background.paper === '#121212'
+                  ? 'rgba(255, 255, 255, 0.16)'
+                  : 'rgba(100, 100, 100, .5)',
+              },
+              padding: 2,
+            }}
+          >
+            <HomeIcon sx={{ fontSize: 48 }} />
+          </IconButton>
 
-        <Box sx={{ p: 2 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sx={{ textAlign: 'center', mb: 2, mt: '30px' }}>
-              <Typography variant="h4">
-                {format(currentTime, 'MMMM d, yyyy')}
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+              <IconButton 
+                onClick={() => setSelectedDate(date => {
+                  const newDate = new Date(date);
+                  newDate.setDate(date.getDate() - 1);
+                  return newDate;
+                })}
+                sx={{
+                  bgcolor: (theme) => theme.palette.background.paper === '#121212'
+                    ? 'rgba(255, 255, 255, 0.12)'
+                    : 'rgba(100, 100, 100, .85)',
+                  '&:hover': {
+                    bgcolor: (theme) => theme.palette.background.paper === '#121212'
+                      ? 'rgba(255, 255, 255, 0.16)'
+                      : 'rgba(100, 100, 100, .5)',
+                  },
+                }}
+              >
+                <ArrowBackIcon />
+              </IconButton>
+              <Typography variant="h4" sx={{ textAlign: 'center' }}>
+                {format(selectedDate, 'MMMM d, yyyy')}
               </Typography>
-              {child && (
-                <Box 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    gap: 2,
-                    mt: 1 
+              {isBeforeToday && (
+                <IconButton 
+                  onClick={() => setSelectedDate(date => {
+                    const newDate = new Date(date);
+                    newDate.setDate(date.getDate() + 1);
+                    return startOfDay(newDate).getTime() <= startOfDay(new Date()).getTime() 
+                      ? newDate 
+                      : new Date();
+                  })}
+                  sx={{
+                    bgcolor: (theme) => theme.palette.background.paper === '#121212'
+                      ? 'rgba(255, 255, 255, 0.12)'
+                      : 'rgba(100, 100, 100, .85)',
+                    '&:hover': {
+                      bgcolor: (theme) => theme.palette.background.paper === '#121212'
+                        ? 'rgba(255, 255, 255, 0.16)'
+                        : 'rgba(100, 100, 100, .5)',
+                    },
                   }}
                 >
-                  <Avatar 
-                    src={child.avatarUrl} 
-                    alt={`${child.name}'s avatar`}
-                    sx={{ width: 48, height: 48 }}
-                  />
-                  <Typography variant="h5" color="textSecondary">
-                    {child.name}
-                  </Typography>
-                </Box>
+                  <ArrowForwardIcon />
+                </IconButton>
               )}
-            </Grid>
-          </Grid>
-        </Box>
+            </Box>
+            {child && (
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: 2,
+                  mt: 1 
+                }}
+              >
+                <Avatar 
+                  src={child.avatarUrl} 
+                  alt={`${child.name}'s avatar`}
+                  sx={{ width: 48, height: 48 }}
+                />
+                <Typography variant="h5" color="textSecondary">
+                  {child.name}
+                </Typography>
+              </Box>
+            )}
+          </Box>
 
-        <Typography variant="h5" sx={{ fontWeight: 500 }}>
-          {format(currentTime, 'h:mm a')}
-        </Typography>
+          <Typography variant="h5" sx={{ fontWeight: 500 }}>
+            {format(currentTime, 'h:mm a')}
+          </Typography>
+        </Box>
       </Box>
 
-      <Grid container spacing={2} sx={{ p: 4 }}>
-        <Grid item xs={6}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Your Chores</Typography>
-              <CalendarSettings
-                selectedCalendars={personalCalendars}
-                onCalendarsChange={handlePersonalCalendarsChange}
-                googleToken={child.googleToken}
-              />
-            </Box>
-            {renderTodoList(personalTodos, false)}
-          </Paper>
-        </Grid>
+      <Box sx={{ pt: 20, px: 4, pb: 4 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={6}>
+            <Paper sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">Your Chores</Typography>
+                <CalendarSettings
+                  selectedCalendars={personalCalendars}
+                  onCalendarsChange={handlePersonalCalendarsChange}
+                  googleToken={child.googleToken}
+                />
+              </Box>
+              {renderTodoList(personalTodos, false)}
+            </Paper>
+          </Grid>
 
-        <Grid item xs={6}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Shared Chores</Typography>
-              <CalendarSettings
-                selectedCalendars={sharedCalendars}
-                onCalendarsChange={handleSharedCalendarsChange}
-                googleToken={child.googleToken}
-              />
-            </Box>
-            {renderTodoList(sharedTodos, true)}
-          </Paper>
+          <Grid item xs={6}>
+            <Paper sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">Shared Chores</Typography>
+                <CalendarSettings
+                  selectedCalendars={sharedCalendars}
+                  onCalendarsChange={handleSharedCalendarsChange}
+                  googleToken={child.googleToken}
+                />
+              </Box>
+              {renderTodoList(sharedTodos, true)}
+            </Paper>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
     </Box>
   );
 };
