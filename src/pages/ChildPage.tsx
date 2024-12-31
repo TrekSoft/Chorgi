@@ -151,8 +151,15 @@ const ChildPage: React.FC = () => {
               ...todo,
               isDone: !!(wasCompletedBySelectedDate && completionStatus[todo.id]?.isDone),
               completedAt: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedAt : undefined,
-              completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined
+              completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined,
+              isShared: false
             };
+          })
+          // Filter out completed todos from previous days
+          .filter(todo => {
+            if (!todo.isDone) return true;
+            if (!isCurrentlyPastDate) return true;
+            return false;
           });
         setPersonalTodos(filteredPersonalTodos);
       } else {
@@ -184,8 +191,15 @@ const ChildPage: React.FC = () => {
               ...todo,
               isDone: !!(wasCompletedBySelectedDate && completionStatus[todo.id]?.isDone),
               completedAt: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedAt : undefined,
-              completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined
+              completedBy: wasCompletedBySelectedDate ? completionStatus[todo.id]?.completedBy : undefined,
+              isShared: true
             };
+          })
+          // Filter out completed todos from previous days
+          .filter(todo => {
+            if (!todo.isDone) return true;
+            if (!isCurrentlyPastDate) return true;
+            return false;
           });
         setSharedTodos(filteredSharedTodos);
       } else {
