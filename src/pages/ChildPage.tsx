@@ -32,7 +32,11 @@ const ChildPage: React.FC = () => {
   const [isLoadingTodos, setIsLoadingTodos] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const isBeforeToday = startOfDay(selectedDate).getTime() < startOfDay(new Date()).getTime();
+
+  const isPastDate = (date: Date) => startOfDay(date).getTime() < startOfDay(new Date()).getTime();
+  const isCurrentlyPastDate = isPastDate(selectedDate);
+
+  const isTodoDisabled = (todo: TodoItem) => isOverdueChore(todo) || isCurrentlyPastDate;
 
   // Update time every minute
   useEffect(() => {
@@ -108,7 +112,7 @@ const ChildPage: React.FC = () => {
       const selectedStartOfDay = startOfDay(selectedDate);
       
       // For past dates, use end of day. For today, use current time
-      const referenceTime = startOfDay(selectedDate).getTime() < startOfDay(new Date()).getTime()
+      const referenceTime = isCurrentlyPastDate
         ? selectedEndOfDay
         : new Date();
 
@@ -302,7 +306,7 @@ const ChildPage: React.FC = () => {
           return (
             <ListItem
               key={todo.id}
-              onClick={() => !isOverdueChore(todo) ? toggleTodoStatus(todo, isShared) : undefined}
+              onClick={() => !isTodoDisabled(todo) ? toggleTodoStatus(todo, isShared) : undefined}
               sx={{
                 bgcolor: todo.backgroundColor 
                   ? (theme) => `color-mix(in srgb, ${todo.backgroundColor}, ${theme.palette.background.paper} 50%)`
@@ -312,8 +316,8 @@ const ChildPage: React.FC = () => {
                 my: 1,
                 borderRadius: 1,
                 height: 72,
-                cursor: !isOverdueChore(todo) ? 'pointer' : 'default',
-                '&:hover': !isOverdueChore(todo) ? {
+                cursor: !isTodoDisabled(todo) ? 'pointer' : 'default',
+                '&:hover': !isTodoDisabled(todo) ? {
                   bgcolor: todo.backgroundColor 
                     ? (theme) => `color-mix(in srgb, ${todo.backgroundColor}, ${theme.palette.background.paper} 40%)`
                     : (theme) => theme.palette.background.paper === '#121212'
@@ -361,15 +365,13 @@ const ChildPage: React.FC = () => {
                         : todo.endTime.includes('T') 
                           ? (() => {
                               const endDate = new Date(todo.endTime);
-                              const today = new Date();
-                              return endDate.toDateString() === today.toDateString()
+                              return endDate.toDateString() === selectedDate.toDateString()
                                 ? `Complete by ${format(endDate, 'h:mm a')}`
                                 : `Complete by ${format(endDate, 'MMM d')} at ${format(endDate, 'h:mm a')}`;
                             })()
                           : (() => {
                               const endDate = new Date(todo.endTime);
-                              const today = new Date();
-                              return endDate.toDateString() === today.toDateString()
+                              return endDate.toDateString() === selectedDate.toDateString()
                                 ? 'Complete by end of day'
                                 : `Complete by end of ${format(endDate, 'MMM d')}`;
                             })()
@@ -486,7 +488,7 @@ const ChildPage: React.FC = () => {
               <Typography variant="h4" sx={{ textAlign: 'center' }}>
                 {format(selectedDate, 'MMMM d, yyyy')}
               </Typography>
-              {isBeforeToday && (
+              {isPastDate(selectedDate) && (
                 <IconButton 
                   onClick={() => setSelectedDate(date => {
                     const newDate = new Date(date);
