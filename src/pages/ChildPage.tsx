@@ -147,9 +147,7 @@ const ChildPage: React.FC = () => {
 
             const completedAt = completionStatus[todo.id]?.completedAt;
             const wasCompletedBySelectedDate =
-              completedAt &&
-              startOfDay(new Date(completedAt)).toISOString() ===
-                startOfDay(selectedDate).toISOString();
+              completedAt && new Date(completedAt) <= endOfDay(selectedDate);
 
             return {
               ...todo,
@@ -196,9 +194,7 @@ const ChildPage: React.FC = () => {
 
             const completedAt = completionStatus[todo.id]?.completedAt;
             const wasCompletedBySelectedDate =
-              completedAt &&
-              startOfDay(new Date(completedAt)).toISOString() ===
-                startOfDay(selectedDate).toISOString();
+              completedAt && new Date(completedAt) <= endOfDay(selectedDate);
 
             return {
               ...todo,
