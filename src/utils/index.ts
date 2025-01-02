@@ -3,11 +3,11 @@ export function randomInRange(min: number, max: number) {
 }
 
 const sounds = [
-  'tada.mp3',
-  'ding.wav',
-  'pop.wav',
-  'woohoo.mp3',
-  'yay.mp3',
+  'confetti1.wav',
+  'confetti2.wav',
+  'confetti3.wav',
+  'confetti4.wav',
+  'confetti5.wav',
 ];
 
 export function playRandomSound() {
