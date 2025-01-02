@@ -4,8 +4,8 @@ export function randomInRange(min: number, max: number) {
 
 const sounds = [
   'tada.mp3',
-  'ding.mp3',
-  'pop.mp3',
+  'ding.wav',
+  'pop.wav',
   'woohoo.mp3',
   'yay.mp3',
 ];
