@@ -20,7 +20,7 @@ import { isAfter, startOfDay, endOfDay, format } from 'date-fns';
 import { getEventsFromCalendar, initializeGoogleCalendar } from '../services/googleCalendar';
 import CalendarSettings from '../components/CalendarSettings';
 import confetti from 'canvas-confetti';
-import { randomInRange } from '../utils';
+import { playRandomSound, randomInRange } from '../utils';
 
 const ChildPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -305,6 +305,7 @@ const ChildPage: React.FC = () => {
         startVelocity: randomInRange(35, 65),
         drift: randomInRange(-0.4, 0.4),
       });
+      playRandomSound();
     }
   };
 
