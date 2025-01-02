@@ -235,37 +235,35 @@ const ChildPage: React.FC = () => {
     if (!id) return;
 
     // Group todos by their start date
-    const todosByStartDate = todos.reduce(
-      (acc, todo) => {
-        const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
-        if (!acc[eventStartDate]) {
-          acc[eventStartDate] = [];
-        }
-        acc[eventStartDate].push(todo);
-        return acc;
-      },
-      {} as Record<string, TodoItem[]>
-    );
+    const todosByStartDate = todos.reduce((acc, todo) => {
+      const eventStartDate = startOfDay(new Date(todo.startTime)).toISOString();
+      if (!acc[eventStartDate]) {
+        acc[eventStartDate] = [];
+      }
+      acc[eventStartDate].push(todo);
+      return acc;
+    }, {} as Record<string, TodoItem[]>);
 
     // Save completion status for each start date
     Object.entries(todosByStartDate).forEach(([startDate, todosForDate]) => {
-      const storageKey = isShared
+      const storageKey = isShared 
         ? `shared-completion-${startDate}`
         : `${id}-personal-completion-${startDate}`;
+      
+      // Get existing completion status
+      const existingStatus = localStorage.getItem(storageKey);
+      const existingCompletionStatus = existingStatus ? JSON.parse(existingStatus) : {};
 
-      const completionStatus = todosForDate.reduce(
-        (acc, todo) => {
-          if (todo.isDone) {
-            acc[todo.id] = {
-              isDone: true,
-              completedAt: todo.completedAt,
-              completedBy: todo.completedBy,
-            };
-          }
-          return acc;
-        },
-        {} as Record<string, any>
-      );
+      // Update completion status for modified todos
+      const completionStatus = todosForDate.reduce((acc, todo) => {
+        acc[todo.id] = {
+          isDone: todo.isDone,
+          completedAt: todo.completedAt,
+          completedBy: todo.completedBy
+        };
+
+        return acc;
+      }, existingCompletionStatus);
 
       localStorage.setItem(storageKey, JSON.stringify(completionStatus));
     });
