@@ -293,10 +293,10 @@ const ChildPage: React.FC = () => {
       setSharedTodos(updatedTodos);
     } else {
       setPersonalTodos(updatedTodos);
-      // Check if this was the last personal todo
-      if (!todo.isDone && updatedTodos.every(t => t.isDone)) {
+      // Check if this was the last personal todo for today
+      if (!todo.isDone && updatedTodos.filter(t => !isOverdueChore(t)).every(t => t.isDone)) {
         fireworksRef.current?.start();
-        setTimeout(() => fireworksRef.current?.waitStop(), 3000); // Stop after 5 seconds
+        setTimeout(() => fireworksRef.current?.waitStop(), 3000); // Stop after 3 seconds
       }
     }
 
