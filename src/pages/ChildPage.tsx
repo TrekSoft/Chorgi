@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -21,10 +21,12 @@ import { getEventsFromCalendar, initializeGoogleCalendar } from '../services/goo
 import CalendarSettings from '../components/CalendarSettings';
 import confetti from 'canvas-confetti';
 import { playRandomSound, randomInRange } from '../utils';
+import { Fireworks, FireworksHandlers } from '@fireworks-js/react';
 
 const ChildPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const fireworksRef = useRef<FireworksHandlers>(null);
   const [child, setChild] = useState<Child | null>(null);
   const [personalTodos, setPersonalTodos] = useState<TodoItem[]>([]);
   const [sharedTodos, setSharedTodos] = useState<TodoItem[]>([]);
@@ -291,6 +293,11 @@ const ChildPage: React.FC = () => {
       setSharedTodos(updatedTodos);
     } else {
       setPersonalTodos(updatedTodos);
+      // Check if this was the last personal todo
+      if (!todo.isDone && updatedTodos.every(t => t.isDone)) {
+        fireworksRef.current?.start();
+        setTimeout(() => fireworksRef.current?.waitStop(), 3000); // Stop after 5 seconds
+      }
     }
 
     saveCompletionStatus(updatedTodos, isShared);
@@ -504,6 +511,71 @@ const ChildPage: React.FC = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Fireworks
+        ref={fireworksRef}
+        autostart={false}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 9999,
+          pointerEvents: 'none',
+        }}
+        options={{
+          autoresize: true,
+          opacity: 0.5,
+          acceleration: 1.05,
+          friction: 0.97,
+          gravity: 1.5,
+          particles: 50,
+          traceLength: 3,
+          traceSpeed: 10,
+          explosion: 5,
+          intensity: 30,
+          flickering: 50,
+          lineStyle: 'round',
+          sound: {
+            enabled: true,
+            files: [
+              '/sounds/explosion0.mp3',
+              '/sounds/explosion1.mp3',
+              '/sounds/explosion2.mp3'
+            ],
+          },
+          hue: {
+            min: 0,
+            max: 360
+          },
+          delay: {
+            min: 30,
+            max: 60
+          },
+          rocketsPoint: {
+            min: 50,
+            max: 50
+          },
+          lineWidth: {
+            explosion: {
+              min: 1,
+              max: 3
+            },
+            trace: {
+              min: 1,
+              max: 2
+            }
+          },
+          brightness: {
+            min: 50,
+            max: 80
+          },
+          decay: {
+            min: 0.015,
+            max: 0.03
+          }
+        }}
+      />
       <Box
         sx={{
           position: 'fixed',
