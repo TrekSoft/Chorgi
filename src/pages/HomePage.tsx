@@ -263,10 +263,21 @@ const HomePage: React.FC = () => {
         variant="contained"
         onClick={() => login()}
         disabled={isLoading}
-        sx={{ mb: 4, my: 8 }}
+        sx={{ my: 6 }}
       >
         {isLoading ? 'Connecting...' : 'Add Child'}
       </Button>
+
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        align="center"
+        sx={{ maxWidth: 600, mb: 1, px: 2 }}
+      >
+        Chorgi helps you coordinate and track family chores as defined on a shared Google Calendar. 
+        We request access to calendar data to display and manage events, and birthday information to 
+        celebrate special days. Your data is stored locally and used only for these features.
+      </Typography>
 
       <Link
         href="/privacy.html"
