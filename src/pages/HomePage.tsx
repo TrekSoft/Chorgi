@@ -204,6 +204,12 @@ const HomePage: React.FC = () => {
         flexDirection: 'column',
         alignItems: 'center',
         p: 3,
+        overflowY: 'scroll',
+        '&::-webkit-scrollbar': {
+          display: 'none'
+        },
+        msOverflowStyle: 'none',
+        scrollbarWidth: 'none'
       }}
     >
       <Box
